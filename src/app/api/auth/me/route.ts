@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { DEMO_ACCOUNTS } from "@/lib/auth";
 import { getRequestUser } from "@/lib/db/request-auth";
-import { isDatabaseReachable } from "@/lib/db/prisma";
+import { isDatabaseConfigured, isDatabaseReachable } from "@/lib/db/prisma";
 
 export async function GET() {
   const user = await getRequestUser();
@@ -9,15 +9,24 @@ export async function GET() {
     return NextResponse.json({ user });
   }
 
-  if (!(await isDatabaseReachable())) {
+  if (!isDatabaseConfigured()) {
+    return NextResponse.json({ user: null, dbConfigured: false });
+  }
+
+  const reachable = await isDatabaseReachable();
+  if (!reachable && process.env.NODE_ENV !== "production") {
     return NextResponse.json({ user: null, offline: true });
   }
 
-  return NextResponse.json({ user: null });
+  return NextResponse.json({ user: null, dbConfigured: true, dbReachable: reachable });
 }
 
-/** Fallback offline: aceita sessão em memória via header (não usado em produção). */
+/** Fallback offline (somente desenvolvimento). */
 export async function POST(request: Request) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Indisponível em produção." }, { status: 400 });
+  }
+
   if (await isDatabaseReachable()) {
     return NextResponse.json({ error: "Use login com banco configurado." }, { status: 400 });
   }

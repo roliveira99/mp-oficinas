@@ -44,8 +44,12 @@ export default function AdminOficinasPage() {
   });
 
   const refresh = useCallback(async () => {
-    const data = await fetchAdminWorkshops();
-    setWorkshops(data.workshops);
+    try {
+      const data = await fetchAdminWorkshops();
+      setWorkshops(data.workshops);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao carregar oficinas.");
+    }
   }, []);
 
   useEffect(() => {

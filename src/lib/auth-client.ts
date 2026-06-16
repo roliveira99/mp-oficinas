@@ -24,13 +24,24 @@ export async function apiLogin(
     return { error: data.error ?? "Falha no login." };
   }
 
-  if (data.offline && typeof window !== "undefined") {
-    sessionStorage.setItem(OFFLINE_SESSION_KEY, JSON.stringify(data.user));
-  } else if (typeof window !== "undefined") {
+  if (data.offline) {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(OFFLINE_SESSION_KEY, JSON.stringify(data.user));
+    }
+    if (process.env.NODE_ENV === "production") {
+      return {
+        error:
+          "Banco de dados indisponível. Cadastro de oficinas e contas exige conexão ativa — tente o login novamente em instantes.",
+      };
+    }
+    return { user: data.user, offline: true };
+  }
+
+  if (typeof window !== "undefined") {
     sessionStorage.removeItem(OFFLINE_SESSION_KEY);
   }
 
-  return { user: data.user, offline: data.offline };
+  return { user: data.user };
 }
 
 export async function apiLogout(): Promise<void> {

@@ -36,11 +36,15 @@ export default function AdminContasPage() {
   });
 
   const refresh = useCallback(async () => {
-    const [usersData, workshopsData] = await Promise.all([fetchAdminUsers(), fetchAdminWorkshops()]);
-    setUsers(usersData.users);
-    setWorkshops(workshopsData.workshops);
-    if (!form.workshopId && workshopsData.workshops[0]) {
-      setForm((f) => ({ ...f, workshopId: workshopsData.workshops[0].id }));
+    try {
+      const [usersData, workshopsData] = await Promise.all([fetchAdminUsers(), fetchAdminWorkshops()]);
+      setUsers(usersData.users);
+      setWorkshops(workshopsData.workshops);
+      if (!form.workshopId && workshopsData.workshops[0]) {
+        setForm((f) => ({ ...f, workshopId: workshopsData.workshops[0].id }));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao carregar contas.");
     }
   }, [form.workshopId]);
 
