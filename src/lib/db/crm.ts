@@ -42,9 +42,10 @@ function mapClient(row: {
 function mapVehicle(row: {
   id: string;
   workshopId: string;
-  clientId: string;
+  clientId: string | null;
   plate: string;
   model: string;
+  completedServices?: unknown;
 }): WorkshopVehicle {
   return {
     id: row.id,
@@ -52,13 +53,15 @@ function mapVehicle(row: {
     clientId: row.clientId,
     plate: row.plate,
     model: row.model,
+    completedServices: (row.completedServices ?? []) as CompletedServiceRecord[],
   };
 }
 
 function mapOrder(row: {
   id: string;
   workshopId: string;
-  clientId: string;
+  clientId: string | null;
+  vehicleId: string | null;
   clientName: string;
   clientCpf: string;
   vehicle: string;
@@ -75,6 +78,7 @@ function mapOrder(row: {
     id: row.id,
     workshopId: row.workshopId,
     clientId: row.clientId,
+    vehicleId: row.vehicleId,
     clientName: row.clientName,
     clientCpf: row.clientCpf,
     vehicle: row.vehicle,
@@ -192,21 +196,34 @@ export async function addClient(
 
 export async function addVehicle(
   workshopId: string,
-  input: { clientId: string; plate: string; model: string }
+  input: { plate: string; model: string; clientId?: string }
 ): Promise<{ ok: true; vehicle: WorkshopVehicle } | { ok: false; error: string }> {
   const plate = input.plate.trim().toUpperCase();
+  const model = input.model.trim();
+  if (!plate || !model) {
+    return { ok: false, error: "Informe placa e modelo do veículo." };
+  }
+
   const dup = await prisma.crmVehicle.findUnique({
     where: { workshopId_plate: { workshopId, plate } },
   });
   if (dup) return { ok: false, error: "Já existe um veículo com esta placa." };
 
+  if (input.clientId) {
+    const client = await prisma.crmClient.findFirst({
+      where: { id: input.clientId, workshopId },
+    });
+    if (!client) return { ok: false, error: "Cliente informado não encontrado." };
+  }
+
   const row = await prisma.crmVehicle.create({
     data: {
       id: `veh-${Date.now()}`,
       workshopId,
-      clientId: input.clientId,
+      clientId: input.clientId ?? null,
       plate,
-      model: input.model.trim(),
+      model,
+      completedServices: [],
     },
   });
   return { ok: true, vehicle: mapVehicle(row) };
@@ -215,19 +232,19 @@ export async function addVehicle(
 export async function createOrder(
   workshopId: string,
   input: {
-    clientId: string;
+    vehicleId: string;
     service: string;
     value: number;
     mechanicId: string;
     mechanicKind: MechanicKind;
-    vehicleId?: string;
+    clientId?: string;
     status?: ServiceOrderStatus;
   }
 ): Promise<{ ok: true; order: WorkshopServiceOrder } | { ok: false; error: string }> {
-  const client = await prisma.crmClient.findFirst({
-    where: { id: input.clientId, workshopId },
+  const vehicle = await prisma.crmVehicle.findFirst({
+    where: { id: input.vehicleId, workshopId },
   });
-  if (!client) return { ok: false, error: "Cliente não encontrado." };
+  if (!vehicle) return { ok: false, error: "Veículo não encontrado. Cadastre a placa antes do orçamento." };
 
   const assignee = await resolveAssignee(workshopId, input.mechanicId, input.mechanicKind);
   if (!assignee) return { ok: false, error: "Selecione quem executará o serviço." };
@@ -239,19 +256,26 @@ export async function createOrder(
     if (!fic) return { ok: false, error: "Este perfil fictício está inativo." };
   }
 
-  let vehicle = input.vehicleId
-    ? await prisma.crmVehicle.findFirst({ where: { id: input.vehicleId, workshopId } })
-    : await prisma.crmVehicle.findFirst({ where: { clientId: input.clientId, workshopId } });
+  let client = input.clientId
+    ? await prisma.crmClient.findFirst({ where: { id: input.clientId, workshopId } })
+    : vehicle.clientId
+      ? await prisma.crmClient.findFirst({ where: { id: vehicle.clientId, workshopId } })
+      : null;
+
+  if (input.clientId && !client) {
+    return { ok: false, error: "Cliente informado não encontrado." };
+  }
 
   const row = await prisma.crmServiceOrder.create({
     data: {
       id: `OS-${Date.now().toString().slice(-6)}`,
       workshopId,
-      clientId: client.id,
-      clientName: client.name,
-      clientCpf: client.cpf,
-      vehicle: vehicle?.model ?? "—",
-      vehiclePlate: vehicle?.plate,
+      clientId: client?.id ?? null,
+      vehicleId: vehicle.id,
+      clientName: client?.name ?? "",
+      clientCpf: client?.cpf ?? "",
+      vehicle: vehicle.model,
+      vehiclePlate: vehicle.plate,
       service: input.service.trim(),
       status: input.status ?? "pendente",
       date: new Date().toISOString().split("T")[0],
@@ -272,18 +296,52 @@ export async function completeOrder(
   if (!order) return { ok: false, error: "Ordem de serviço não encontrada." };
   if (order.status === "concluido") return { ok: true, order: mapOrder(order) };
 
-  const client = await prisma.crmClient.findFirst({ where: { id: order.clientId, workshopId } });
-  if (!client) return { ok: false, error: "Cliente vinculado à OS não encontrado no cadastro." };
-
-  const completed = client.completedServices as unknown as CompletedServiceRecord[];
   const record: CompletedServiceRecord = {
     orderId: order.id,
     service: order.service,
     date: order.date,
     vehicle: order.vehicle,
   };
-  if (!completed.some((s) => s.orderId === order.id)) {
-    completed.push(record);
+
+  const client = order.clientId
+    ? await prisma.crmClient.findFirst({ where: { id: order.clientId, workshopId } })
+    : null;
+
+  const vehicle = order.vehicleId
+    ? await prisma.crmVehicle.findFirst({ where: { id: order.vehicleId, workshopId } })
+    : order.vehiclePlate
+      ? await prisma.crmVehicle.findFirst({
+          where: { workshopId, plate: order.vehiclePlate },
+        })
+      : null;
+
+  if (!client && !vehicle) {
+    return { ok: false, error: "Veículo da ordem não encontrado no cadastro." };
+  }
+
+  if (client) {
+    const completed = client.completedServices as unknown as CompletedServiceRecord[];
+    if (!completed.some((s) => s.orderId === order.id)) {
+      completed.push(record);
+    }
+
+    const [updatedOrder] = await prisma.$transaction([
+      prisma.crmServiceOrder.update({
+        where: { id: orderId },
+        data: { status: "concluido" },
+      }),
+      prisma.crmClient.update({
+        where: { id: client.id },
+        data: { completedServices: completed as unknown as Prisma.InputJsonValue },
+      }),
+    ]);
+
+    return { ok: true, order: mapOrder(updatedOrder) };
+  }
+
+  const vehicleCompleted = (vehicle!.completedServices ?? []) as unknown as CompletedServiceRecord[];
+  if (!vehicleCompleted.some((s) => s.orderId === order.id)) {
+    vehicleCompleted.push(record);
   }
 
   const [updatedOrder] = await prisma.$transaction([
@@ -291,9 +349,9 @@ export async function completeOrder(
       where: { id: orderId },
       data: { status: "concluido" },
     }),
-    prisma.crmClient.update({
-      where: { id: client.id },
-      data: { completedServices: completed as unknown as Prisma.InputJsonValue },
+    prisma.crmVehicle.update({
+      where: { id: vehicle!.id },
+      data: { completedServices: vehicleCompleted as unknown as Prisma.InputJsonValue },
     }),
   ]);
 

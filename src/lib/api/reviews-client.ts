@@ -51,15 +51,26 @@ export async function submitWorkshopReview(
 
 export async function verifyWorkshopClient(
   slug: string,
-  cpf: string
-): Promise<{ client: VerifiedClient | null; existingReview: WorkshopReview | null }> {
+  input: { cpf: string; plate: string; name?: string; phone?: string }
+): Promise<
+  | { client: VerifiedClient; existingReview: WorkshopReview | null }
+  | { needsRegistration: true }
+  | { error: string }
+> {
   const res = await fetch(`/api/workshops/${encodeURIComponent(slug)}/reviews`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "verify", cpf }),
+    body: JSON.stringify({ action: "verify", ...input }),
   });
-  if (!res.ok) return { client: null, existingReview: null };
-  return res.json() as Promise<{ client: VerifiedClient | null; existingReview: WorkshopReview | null }>;
+  const data = (await res.json()) as {
+    client?: VerifiedClient;
+    existingReview?: WorkshopReview | null;
+    needsRegistration?: boolean;
+    error?: string;
+  };
+  if (data.needsRegistration) return { needsRegistration: true };
+  if (!res.ok || !data.client) return { error: data.error ?? "Não foi possível verificar elegibilidade." };
+  return { client: data.client, existingReview: data.existingReview ?? null };
 }
 
 export async function fetchAdminReviews(): Promise<(WorkshopReview & { removed: boolean })[]> {

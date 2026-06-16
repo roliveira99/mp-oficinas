@@ -11,7 +11,7 @@ import { roleRestrictions } from "@/lib/permissions";
 const gerenciaFeatures = [
   "Dashboard operacional",
   "Aprovação e alteração de orçamentos",
-  "Cadastro de clientes e veículos",
+  "Cadastro de veículos",
   "Controle de estoque (entrada e saída)",
   "Emissão de notas, PDF e WhatsApp",
   "Relatórios operacionais",

@@ -22,20 +22,20 @@ const funcionarios = [
 
 export default function CadastrosPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState("clientes");
+  const [tab, setTab] = useState("veiculos");
   const isOwner = user?.role === "dono";
   const workshopId = user?.workshopId ?? "1";
 
   const tabs = [
     {
-      id: "clientes",
-      label: "Clientes",
-      content: <ClientesTab workshopId={workshopId} />,
-    },
-    {
       id: "veiculos",
       label: "Veículos",
       content: <VeiculosTab workshopId={workshopId} />,
+    },
+    {
+      id: "clientes",
+      label: "Clientes (avaliações)",
+      content: <ClientesTab workshopId={workshopId} />,
     },
     ...(isOwner
       ? [
@@ -135,11 +135,11 @@ export default function CadastrosPage() {
   return (
     <PermissionGuard permissions={permissions}>
       <PageHeader
-        title={isOwner ? "Cadastros" : "Clientes e veículos"}
+        title={isOwner ? "Cadastros" : "Veículos e clientes"}
         description={
           isOwner
-            ? "Clientes com CPF liberam avaliações no perfil público quando um serviço é concluído"
-            : "Cadastro de clientes (CPF) e veículos vinculados"
+            ? "Cadastre veículos por placa. Clientes se registram ao avaliar no perfil público."
+            : "Cadastro operacional de veículos — cliente só se identifica na avaliação"
         }
       />
       <TabPanel tabs={tabs} activeTab={tab} onTabChange={setTab} />

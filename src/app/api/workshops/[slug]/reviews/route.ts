@@ -4,8 +4,8 @@ import {
   getReviewByCpf,
   getReviewsForWorkshop,
   getReviewStats,
-  getVerifiedClient,
   upsertReview,
+  verifyReviewEligibility,
 } from "@/lib/db/reviews";
 import { getWorkshopBySlug } from "@/lib/db/workshops";
 import { requirePermission } from "@/lib/db/request-auth";
@@ -37,18 +37,37 @@ export async function POST(request: Request, context: RouteContext) {
 
   const body = (await request.json()) as {
     cpf?: string;
+    plate?: string;
+    name?: string;
+    phone?: string;
     stars?: number;
     comment?: string;
     action?: "verify";
   };
 
   if (body.action === "verify") {
-    if (!body.cpf) {
-      return NextResponse.json({ error: "CPF obrigatório." }, { status: 400 });
+    if (!body.cpf || !body.plate) {
+      return NextResponse.json({ error: "CPF e placa são obrigatórios." }, { status: 400 });
     }
-    const client = await getVerifiedClient(workshop.id, body.cpf);
-    const existing = client ? await getReviewByCpf(workshop.id, body.cpf) : null;
-    return NextResponse.json({ client, existingReview: existing });
+    const result = await verifyReviewEligibility({
+      workshopId: workshop.id,
+      cpf: body.cpf,
+      plate: body.plate,
+      name: body.name,
+      phone: body.phone,
+    });
+
+    if (result.status === "not_eligible") {
+      return NextResponse.json({ error: result.error }, { status: 403 });
+    }
+    if (result.status === "needs_registration") {
+      return NextResponse.json({ needsRegistration: true });
+    }
+
+    return NextResponse.json({
+      client: result.client,
+      existingReview: result.existingReview,
+    });
   }
 
   if (!body.cpf || !body.stars || body.stars < 1 || body.stars > 5) {

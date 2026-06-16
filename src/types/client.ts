@@ -13,9 +13,10 @@ export interface WorkshopClient {
 export interface WorkshopVehicle {
   id: string;
   workshopId: string;
-  clientId: string;
+  clientId?: string | null;
   plate: string;
   model: string;
+  completedServices?: import("@/types/review").CompletedServiceRecord[];
 }
 
 export type MechanicKind = "fictional" | "platform";
@@ -52,7 +53,8 @@ export interface MechanicProductivity {
 export interface WorkshopServiceOrder {
   id: string;
   workshopId: string;
-  clientId: string;
+  clientId?: string | null;
+  vehicleId?: string | null;
   clientName: string;
   clientCpf: string;
   vehicle: string;

@@ -158,13 +158,14 @@ model CrmClient {
 }
 
 model CrmVehicle {
-  id         String    @id
-  workshopId String
-  workshop   Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  clientId   String
-  client     CrmClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  plate      String
-  model      String
+  id                String    @id
+  workshopId        String
+  workshop          Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  clientId          String?
+  client            CrmClient? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  plate             String
+  model             String
+  completedServices Json      @default("[]")
 
   @@unique([workshopId, plate])
   @@index([workshopId])
@@ -175,9 +176,10 @@ model CrmServiceOrder {
   id           String             @id
   workshopId   String
   workshop     Workshop           @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  clientId     String
-  clientName   String
-  clientCpf    String
+  clientId     String?
+  vehicleId    String?
+  clientName   String             @default("")
+  clientCpf    String             @default("")
   vehicle      String
   vehiclePlate String?
   service      String
@@ -192,6 +194,7 @@ model CrmServiceOrder {
 
   @@index([workshopId])
   @@index([workshopId, status])
+  @@index([vehicleId])
 }
 
 model FictionalMechanic {

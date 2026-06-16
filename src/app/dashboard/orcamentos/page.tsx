@@ -10,7 +10,6 @@ import {
 } from "@/components/dashboard/MechanicAssigneeSelect";
 import { PermissionGuard } from "@/components/dashboard/PermissionGuard";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { formatCpf } from "@/lib/cpf";
 import { orderStatusColors, orderStatusLabels } from "@/lib/labels";
 import {
   apiAssignMechanic,
@@ -18,16 +17,14 @@ import {
   apiUpdateOrderStatus,
   fetchCrm,
 } from "@/lib/api/crm-client";
-import type { MechanicAssignee, MechanicKind, WorkshopClient, WorkshopServiceOrder, WorkshopVehicle } from "@/types/client";
+import type { MechanicAssignee, MechanicKind, WorkshopServiceOrder, WorkshopVehicle } from "@/types/client";
 
 export default function OrcamentosPage() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<WorkshopServiceOrder[]>([]);
-  const [clients, setClients] = useState<WorkshopClient[]>([]);
   const [vehicles, setVehicles] = useState<WorkshopVehicle[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [assignees, setAssignees] = useState<MechanicAssignee[]>([]);
-  const [clientId, setClientId] = useState("");
   const [vehicleId, setVehicleId] = useState("");
   const [service, setService] = useState("");
   const [value, setValue] = useState("");
@@ -42,7 +39,6 @@ export default function OrcamentosPage() {
     const data = await fetchCrm();
     setOrders(data.orders);
     setAssignees(data.assignees);
-    setClients(data.clients);
     setVehicles(data.vehicles);
   }, []);
 
@@ -50,7 +46,7 @@ export default function OrcamentosPage() {
     void refresh();
   }, [refresh, user?.workshopId]);
 
-  const clientVehicles = vehicles.filter((v) => !clientId || v.clientId === clientId);
+  const clientVehicles = vehicles;
 
   async function approve(id: string) {
     await apiUpdateOrderStatus(id, "em_andamento");
@@ -62,13 +58,17 @@ export default function OrcamentosPage() {
     setError("");
     setMessage("");
 
+    if (!vehicleId) {
+      setError("Selecione o veículo. Cadastre a placa em Cadastros se necessário.");
+      return;
+    }
+
     const result = await apiCreateOrder({
-      clientId,
+      vehicleId,
       service,
       value: Number(value),
       mechanicId,
       mechanicKind,
-      vehicleId: vehicleId || undefined,
       status: "pendente",
     });
 
@@ -81,7 +81,6 @@ export default function OrcamentosPage() {
     setMessage(
       `Orçamento ${result.order.id} criado e atribuído a ${assignee?.name ?? result.order.mechanicName}. Perfil fictício não acessa o sistema — você gerencia daqui.`
     );
-    setClientId("");
     setVehicleId("");
     setService("");
     setValue("");
@@ -139,27 +138,11 @@ export default function OrcamentosPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <select
               required
-              value={clientId}
-              onChange={(e) => {
-                setClientId(e.target.value);
-                setVehicleId("");
-              }}
-              className="input-field"
-            >
-              <option value="">Cliente</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} — {formatCpf(c.cpf)}
-                </option>
-              ))}
-            </select>
-            <select
               value={vehicleId}
               onChange={(e) => setVehicleId(e.target.value)}
-              className="input-field"
-              disabled={!clientId}
+              className="input-field sm:col-span-2"
             >
-              <option value="">Veículo (opcional)</option>
+              <option value="">Veículo (placa) *</option>
               {clientVehicles.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.plate} — {v.model}
@@ -202,10 +185,10 @@ export default function OrcamentosPage() {
       )}
 
       <DataTable
-        headers={["OS", "Cliente", "Serviço", "Responsável", "Valor", "Status", "Ações"]}
+        headers={["OS", "Veículo", "Serviço", "Responsável", "Valor", "Status", "Ações"]}
         rows={orders.map((o) => [
           o.id,
-          o.clientName,
+          o.vehiclePlate ? `${o.vehiclePlate} — ${o.vehicle}` : o.vehicle,
           o.service,
           <span key={`m-${o.id}`} className="inline-flex flex-wrap items-center gap-2">
             {o.mechanicName ?? "—"}

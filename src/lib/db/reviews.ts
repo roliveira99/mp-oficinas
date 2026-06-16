@@ -1,6 +1,7 @@
 import { seedReviews, verifiedClientsByWorkshop } from "@/data/verified-clients";
 import { normalizeCpf } from "@/lib/cpf";
 import { isDatabaseReachable, prisma } from "@/lib/db/prisma";
+import type { Prisma } from "@prisma/client";
 import type { CompletedServiceRecord, ReviewStats, StarRating, VerifiedClient, WorkshopReview } from "@/types/review";
 
 function mapReview(row: {
@@ -40,6 +41,160 @@ async function getVerifiedClientFromDb(
     name: client.name,
     completedServices: client.completedServices as unknown as CompletedServiceRecord[],
   };
+}
+
+function normalizePlate(plate: string) {
+  return plate.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function workshopClientId(workshopId: string, cpf: string) {
+  return `cli-${workshopId}-${cpf}`;
+}
+
+async function collectVehicleEligibleServices(
+  workshopId: string,
+  vehicleId: string,
+  plate: string
+): Promise<CompletedServiceRecord[]> {
+  const vehicle = await prisma.crmVehicle.findFirst({ where: { id: vehicleId, workshopId } });
+  const fromVehicle = (vehicle?.completedServices ?? []) as unknown as CompletedServiceRecord[];
+
+  const fromOrders = await prisma.crmServiceOrder.findMany({
+    where: {
+      workshopId,
+      status: "concluido",
+      OR: [{ vehicleId }, { vehiclePlate: plate }],
+    },
+  });
+
+  const merged = [...fromVehicle];
+  for (const order of fromOrders) {
+    if (!merged.some((s) => s.orderId === order.id)) {
+      merged.push({
+        orderId: order.id,
+        service: order.service,
+        date: order.date,
+        vehicle: order.vehicle,
+      });
+    }
+  }
+  return merged;
+}
+
+export type VerifyReviewResult =
+  | { status: "ready"; client: VerifiedClient; existingReview: WorkshopReview | null }
+  | { status: "needs_registration" }
+  | { status: "not_eligible"; error: string };
+
+export async function verifyReviewEligibility(input: {
+  workshopId: string;
+  cpf: string;
+  plate: string;
+  name?: string;
+  phone?: string;
+}): Promise<VerifyReviewResult> {
+  const cpf = normalizeCpf(input.cpf);
+  const plate = normalizePlate(input.plate);
+
+  if (!cpf || plate.length < 7) {
+    return { status: "not_eligible", error: "Informe CPF e placa válidos." };
+  }
+
+  if (!(await isDatabaseReachable())) {
+    const staticClient = getVerifiedClientStatic(input.workshopId, cpf);
+    if (staticClient && staticClient.completedServices.length > 0) {
+      const existingReview = await getReviewByCpf(input.workshopId, cpf);
+      return { status: "ready", client: staticClient, existingReview };
+    }
+    return {
+      status: "not_eligible",
+      error: "Não encontramos serviço concluído para este CPF e placa.",
+    };
+  }
+
+  const existingReview = await getReviewByCpf(input.workshopId, cpf);
+  let client = await getVerifiedClientFromDb(input.workshopId, cpf);
+
+  if (client && client.completedServices.length > 0) {
+    return { status: "ready", client, existingReview };
+  }
+
+  const vehicle = await prisma.crmVehicle.findFirst({
+    where: { workshopId: input.workshopId, plate },
+  });
+
+  if (!vehicle) {
+    return {
+      status: "not_eligible",
+      error: "Placa não encontrada nesta oficina. Confira a placa do veículo atendido.",
+    };
+  }
+
+  const eligibleServices = await collectVehicleEligibleServices(
+    input.workshopId,
+    vehicle.id,
+    plate
+  );
+
+  if (eligibleServices.length === 0) {
+    return {
+      status: "not_eligible",
+      error: "Ainda não há serviço concluído para este veículo nesta oficina.",
+    };
+  }
+
+  if (!input.name?.trim()) {
+    return { status: "needs_registration" };
+  }
+
+  const name = input.name.trim();
+  const phone = input.phone?.trim() ?? "";
+
+  if (client) {
+    const merged = [...client.completedServices];
+    for (const service of eligibleServices) {
+      if (!merged.some((s) => s.orderId === service.orderId)) merged.push(service);
+    }
+    const updated = await prisma.crmClient.update({
+      where: { workshopId_cpf: { workshopId: input.workshopId, cpf } },
+      data: {
+        name,
+        phone: phone || undefined,
+        completedServices: merged as unknown as Prisma.InputJsonValue,
+      },
+    });
+    await prisma.crmVehicle.update({
+      where: { id: vehicle.id },
+      data: { clientId: updated.id, completedServices: [] },
+    });
+    client = {
+      cpf: updated.cpf,
+      name: updated.name,
+      completedServices: merged,
+    };
+  } else {
+    const created = await prisma.crmClient.create({
+      data: {
+        id: workshopClientId(input.workshopId, cpf),
+        workshopId: input.workshopId,
+        cpf,
+        name,
+        phone,
+        completedServices: eligibleServices as unknown as Prisma.InputJsonValue,
+      },
+    });
+    await prisma.crmVehicle.update({
+      where: { id: vehicle.id },
+      data: { clientId: created.id, completedServices: [] },
+    });
+    client = {
+      cpf: created.cpf,
+      name: created.name,
+      completedServices: eligibleServices,
+    };
+  }
+
+  return { status: "ready", client, existingReview };
 }
 
 function getVerifiedClientStatic(workshopId: string, cpf: string): VerifiedClient | null {
@@ -127,7 +282,7 @@ export async function upsertReview(input: {
     return {
       ok: false,
       error:
-        "Só é possível avaliar após um serviço concluído neste estabelecimento. Informe o CPF usado no cadastro da oficina.",
+        "Só é possível avaliar após um serviço concluído. Informe CPF e placa do veículo atendido.",
     };
   }
 

@@ -38,19 +38,19 @@ export async function apiAddClient(input: { name: string; phone: string; cpf: st
   >;
 }
 
-export async function apiAddVehicle(input: { clientId: string; plate: string; model: string }) {
+export async function apiAddVehicle(input: { plate: string; model: string; clientId?: string }) {
   return crmPost({ action: "add-vehicle", ...input }) as Promise<
     { ok: true; vehicle: WorkshopVehicle } | { ok: false; error: string }
   >;
 }
 
 export async function apiCreateOrder(input: {
-  clientId: string;
+  vehicleId: string;
   service: string;
   value: number;
   mechanicId: string;
   mechanicKind: MechanicKind;
-  vehicleId?: string;
+  clientId?: string;
   status?: ServiceOrderStatus;
 }) {
   return crmPost({ action: "create-order", ...input }) as Promise<

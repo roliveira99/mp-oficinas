@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { formatCpf, formatCpfInput, isValidCpfFormat, maskCpf, normalizeCpf } from "@/lib/cpf";
+import { formatCpf, formatCpfInput, isValidCpfFormat, maskCpf } from "@/lib/cpf";
 import {
   fetchWorkshopReviews,
   formatReviewDate,
@@ -17,13 +17,16 @@ interface WorkshopReviewsSectionProps {
   onStatsChange?: (average: number, count: number) => void;
 }
 
-type FormStep = "cpf" | "form" | "success";
+type FormStep = "cpf" | "register" | "form" | "success";
 
 export function WorkshopReviewsSection({ workshop, onStatsChange }: WorkshopReviewsSectionProps) {
   const [reviews, setReviews] = useState<WorkshopReview[]>([]);
   const [stats, setStats] = useState({ average: workshop.rating, count: workshop.reviewCount });
   const [step, setStep] = useState<FormStep>("cpf");
   const [cpf, setCpf] = useState("");
+  const [plate, setPlate] = useState("");
+  const [registerName, setRegisterName] = useState("");
+  const [registerPhone, setRegisterPhone] = useState("");
   const [stars, setStars] = useState<StarRating | 0>(0);
   const [comment, setComment] = useState("");
   const [error, setError] = useState("");
@@ -53,17 +56,58 @@ export function WorkshopReviewsSection({ workshop, onStatsChange }: WorkshopRevi
       setError("Informe um CPF válido.");
       return;
     }
-
-    const normalized = normalizeCpf(cpf);
-    const { client, existingReview } = await verifyWorkshopClient(workshop.slug, normalized);
-
-    if (!client) {
-      setError(
-        "Não encontramos serviço concluído para este CPF neste estabelecimento. Apenas clientes atendidos podem avaliar."
-      );
+    if (!plate.trim()) {
+      setError("Informe a placa do veículo atendido.");
       return;
     }
 
+    const result = await verifyWorkshopClient(workshop.slug, { cpf, plate });
+
+    if ("error" in result) {
+      setError(result.error);
+      return;
+    }
+
+    if ("needsRegistration" in result) {
+      setStep("register");
+      return;
+    }
+
+    applyVerifiedClient(result.client, result.existingReview);
+  }
+
+  async function handleRegisterSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+
+    if (!registerName.trim()) {
+      setError("Informe seu nome para concluir o cadastro.");
+      return;
+    }
+
+    const result = await verifyWorkshopClient(workshop.slug, {
+      cpf,
+      plate,
+      name: registerName.trim(),
+      phone: registerPhone.trim() || undefined,
+    });
+
+    if ("error" in result) {
+      setError(result.error);
+      return;
+    }
+    if ("needsRegistration" in result) {
+      setError("Não foi possível concluir o cadastro. Tente novamente.");
+      return;
+    }
+
+    applyVerifiedClient(result.client, result.existingReview);
+  }
+
+  function applyVerifiedClient(
+    client: { name: string },
+    existingReview: WorkshopReview | null
+  ) {
     setClientName(client.name);
     setIsEditing(!!existingReview);
 
@@ -114,6 +158,9 @@ export function WorkshopReviewsSection({ workshop, onStatsChange }: WorkshopRevi
   function resetForm() {
     setStep("cpf");
     setCpf("");
+    setPlate("");
+    setRegisterName("");
+    setRegisterPhone("");
     setStars(0);
     setComment("");
     setError("");
@@ -172,13 +219,13 @@ export function WorkshopReviewsSection({ workshop, onStatsChange }: WorkshopRevi
                   : "Deixe sua avaliação"}
             </h3>
             <p className="mt-1 text-xs text-muted">
-              Um CPF = uma avaliação por oficina. Para avaliar de novo, edite a existente.
+              Informe CPF e placa do veículo. Se ainda não estiver cadastrado, faremos seu registro aqui.
             </p>
 
             {step === "cpf" && (
               <form onSubmit={handleCpfSubmit} className="mt-4 space-y-3">
                 <label className="block text-sm">
-                  <span className="font-medium">CPF do titular do serviço</span>
+                  <span className="font-medium">CPF</span>
                   <input
                     required
                     value={cpf}
@@ -186,6 +233,17 @@ export function WorkshopReviewsSection({ workshop, onStatsChange }: WorkshopRevi
                     className="input-field mt-1.5"
                     placeholder="000.000.000-00"
                     maxLength={14}
+                  />
+                </label>
+                <label className="block text-sm">
+                  <span className="font-medium">Placa do veículo</span>
+                  <input
+                    required
+                    value={plate}
+                    onChange={(e) => setPlate(e.target.value.toUpperCase())}
+                    className="input-field mt-1.5"
+                    placeholder="ABC1D23"
+                    maxLength={8}
                   />
                 </label>
                 {error && <p className="text-sm text-red-600">{error}</p>}
@@ -196,6 +254,52 @@ export function WorkshopReviewsSection({ workshop, onStatsChange }: WorkshopRevi
                   Verificar elegibilidade
                 </button>
                 <DemoCpfHint workshopId={workshop.id} />
+              </form>
+            )}
+
+            {step === "register" && (
+              <form onSubmit={handleRegisterSubmit} className="mt-4 space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Encontramos serviço concluído para esta placa. Complete seu cadastro para avaliar.
+                </p>
+                <label className="block text-sm">
+                  <span className="font-medium">Seu nome</span>
+                  <input
+                    required
+                    value={registerName}
+                    onChange={(e) => setRegisterName(e.target.value)}
+                    className="input-field mt-1.5"
+                    placeholder="Nome completo"
+                  />
+                </label>
+                <label className="block text-sm">
+                  <span className="font-medium">Telefone (opcional)</span>
+                  <input
+                    value={registerPhone}
+                    onChange={(e) => setRegisterPhone(e.target.value)}
+                    className="input-field mt-1.5"
+                    placeholder="WhatsApp"
+                  />
+                </label>
+                {error && <p className="text-sm text-red-600">{error}</p>}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("cpf");
+                      setError("");
+                    }}
+                    className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium hover:bg-surface"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-90"
+                  >
+                    Continuar
+                  </button>
+                </div>
               </form>
             )}
 

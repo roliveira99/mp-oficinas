@@ -58,20 +58,20 @@ export async function POST(request: Request) {
       }
       case "add-vehicle": {
         const result = await addVehicle(workshopId, {
-          clientId: body.clientId as string,
           plate: body.plate as string,
           model: body.model as string,
+          clientId: body.clientId as string | undefined,
         });
         return NextResponse.json(result);
       }
       case "create-order": {
         const result = await createOrder(workshopId, {
-          clientId: body.clientId as string,
+          vehicleId: body.vehicleId as string,
           service: body.service as string,
           value: body.value as number,
           mechanicId: body.mechanicId as string,
           mechanicKind: body.mechanicKind as MechanicKind,
-          vehicleId: body.vehicleId as string | undefined,
+          clientId: body.clientId as string | undefined,
           status: body.status as ServiceOrderStatus | undefined,
         });
         return NextResponse.json(result);
