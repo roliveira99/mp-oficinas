@@ -4,8 +4,11 @@ import { getRequestUser, userHasPermission } from "@/lib/db/request-auth";
 
 export async function GET() {
   const user = await getRequestUser();
-  if (!user || !userHasPermission(user, "admin.criar_contas")) {
-    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  if (!user) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
+  if (!userHasPermission(user, "admin.criar_contas")) {
+    return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
   const users = await listAdminUsers();
   return NextResponse.json({ users });
@@ -13,7 +16,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const user = await getRequestUser();
-  if (!user || !userHasPermission(user, "admin.criar_contas")) {
+  if (!user) {
+    return NextResponse.json({ error: "Sessão expirada. Faça login novamente." }, { status: 401 });
+  }
+  if (!userHasPermission(user, "admin.criar_contas")) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
 
@@ -35,7 +41,10 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const user = await getRequestUser();
-  if (!user || !userHasPermission(user, "admin.criar_contas")) {
+  if (!user) {
+    return NextResponse.json({ error: "Sessão expirada. Faça login novamente." }, { status: 401 });
+  }
+  if (!userHasPermission(user, "admin.criar_contas")) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
 

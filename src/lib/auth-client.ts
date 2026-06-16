@@ -10,6 +10,7 @@ export async function apiLogin(
   const res = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ email, password }),
   });
 
@@ -36,7 +37,7 @@ export async function apiLogout(): Promise<void> {
   if (typeof window !== "undefined") {
     sessionStorage.removeItem(OFFLINE_SESSION_KEY);
   }
-  await fetch("/api/auth/logout", { method: "POST" });
+  await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
 }
 
 export async function apiGetSession(): Promise<AuthUser | null> {
@@ -51,7 +52,7 @@ export async function apiGetSession(): Promise<AuthUser | null> {
     }
   }
 
-  const res = await fetch("/api/auth/me");
+  const res = await fetch("/api/auth/me", { credentials: "include" });
   if (!res.ok) return null;
   const data = (await res.json()) as { user: AuthUser | null };
   return data.user;

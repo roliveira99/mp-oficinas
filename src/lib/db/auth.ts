@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import type { User } from "@prisma/client";
-import { isDatabaseReachable, prisma } from "@/lib/db/prisma";
+import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 import type { AuthUser, UserRole } from "@/types/auth";
 
 export const SESSION_COOKIE = "mp_session";
@@ -47,28 +47,36 @@ export async function createSession(userId: string): Promise<string> {
 }
 
 export async function getSessionUser(token: string | undefined): Promise<AuthUser | null> {
-  if (!token || !(await isDatabaseReachable())) return null;
+  if (!token || !isDatabaseConfigured()) return null;
 
-  const session = await prisma.session.findUnique({
-    where: { token },
-    include: {
-      user: {
-        include: { workshop: { select: { name: true } } },
+  try {
+    const session = await prisma.session.findUnique({
+      where: { token },
+      include: {
+        user: {
+          include: { workshop: { select: { name: true } } },
+        },
       },
-    },
-  });
+    });
 
-  if (!session || session.expiresAt < new Date()) {
-    if (session) await prisma.session.delete({ where: { id: session.id } });
+    if (!session || session.expiresAt < new Date()) {
+      if (session) await prisma.session.delete({ where: { id: session.id } });
+      return null;
+    }
+
+    return toAuthUser(session.user, session.user.workshop?.name ?? null);
+  } catch {
     return null;
   }
-
-  return toAuthUser(session.user, session.user.workshop?.name ?? null);
 }
 
 export async function deleteSession(token: string): Promise<void> {
-  if (!(await isDatabaseReachable())) return;
-  await prisma.session.deleteMany({ where: { token } });
+  if (!isDatabaseConfigured()) return;
+  try {
+    await prisma.session.deleteMany({ where: { token } });
+  } catch {
+    /* ignore */
+  }
 }
 
 export function hashPassword(password: string): Promise<string> {

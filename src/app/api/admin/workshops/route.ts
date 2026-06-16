@@ -5,8 +5,11 @@ import type { WorkshopType } from "@prisma/client";
 
 export async function GET() {
   const user = await getRequestUser();
-  if (!user || !userHasPermission(user, "admin.visualizar_oficinas")) {
-    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  if (!user) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
+  if (!userHasPermission(user, "admin.visualizar_oficinas")) {
+    return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
   const workshops = await listAdminWorkshops();
   return NextResponse.json({ workshops });
@@ -14,8 +17,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const user = await getRequestUser();
-  if (!user || !userHasPermission(user, "admin.aprovar_oficinas")) {
-    return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+  if (!user) {
+    return NextResponse.json({ error: "Sessão expirada. Faça login novamente." }, { status: 401 });
+  }
+  if (!userHasPermission(user, "admin.aprovar_oficinas")) {
+    return NextResponse.json({ error: "Sem permissão para cadastrar oficinas." }, { status: 403 });
   }
 
   const body = (await request.json()) as Record<string, unknown>;
@@ -50,7 +56,10 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const user = await getRequestUser();
-  if (!user || !userHasPermission(user, "admin.bloquear_oficinas")) {
+  if (!user) {
+    return NextResponse.json({ error: "Sessão expirada. Faça login novamente." }, { status: 401 });
+  }
+  if (!userHasPermission(user, "admin.bloquear_oficinas")) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
 
