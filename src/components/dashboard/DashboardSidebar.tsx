@@ -10,7 +10,13 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { getNavItems } from "@/lib/permissions";
 
-export function DashboardSidebar() {
+export function DashboardSidebar({
+  mobileOpen = false,
+  onNavigate,
+}: {
+  mobileOpen?: boolean;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -28,6 +34,7 @@ export function DashboardSidebar() {
   }, {});
 
   async function handleLogout() {
+    onNavigate?.();
     await logout();
     router.push("/login");
   }
@@ -38,7 +45,11 @@ export function DashboardSidebar() {
   }
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-text">
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col bg-sidebar text-sidebar-text transition-transform duration-200 ease-out lg:static lg:z-auto lg:max-w-none lg:shrink-0 lg:translate-x-0 ${
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
       <div className="border-b border-sidebar-border px-5 py-5">
         <Logo variant="light" size="sm" />
       </div>
@@ -67,6 +78,7 @@ export function DashboardSidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={onNavigate}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                     isActive(item.href)
                       ? "bg-sidebar-hover font-medium text-sidebar-text-active"
@@ -87,7 +99,7 @@ export function DashboardSidebar() {
         ))}
       </nav>
 
-      <DemoProfileSwitcher />
+      <DemoProfileSwitcher onNavigate={onNavigate} />
 
       <div className="border-t border-sidebar-border px-3 py-3">
         <div className="flex items-center justify-between px-2 py-1">

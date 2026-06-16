@@ -6,7 +6,7 @@ import { DEMO_ACCOUNTS } from "@/lib/auth";
 import { roleLabels } from "@/lib/permissions";
 import type { UserRole } from "@/types/auth";
 
-export function DemoProfileSwitcher() {
+export function DemoProfileSwitcher({ onNavigate }: { onNavigate?: () => void }) {
   const { user, setUser } = useAuth();
   const router = useRouter();
 
@@ -14,6 +14,7 @@ export function DemoProfileSwitcher() {
     const account = DEMO_ACCOUNTS.find((a) => a.user.role === role);
     if (!account || account.user.email === user?.email) return;
     setUser(account.user);
+    onNavigate?.();
     router.push("/dashboard");
   }
 
