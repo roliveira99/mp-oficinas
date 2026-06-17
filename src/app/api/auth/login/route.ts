@@ -8,7 +8,13 @@ import {
   SESSION_COOKIE,
   toAuthUser,
 } from "@/lib/db/auth";
-import { isDatabaseConfigured, isDatabaseReachable, prisma, resetDatabaseReachableCache } from "@/lib/db/prisma";
+import {
+  formatDatabaseError,
+  isDatabaseConfigured,
+  isPrismaConnectionError,
+  prisma,
+  withDatabaseRetry,
+} from "@/lib/db/prisma";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -42,7 +48,10 @@ export async function POST(request: Request) {
   if (!isDatabaseConfigured()) {
     if (isProduction) {
       return NextResponse.json(
-        { error: "Banco de dados não configurado no servidor. Contate o administrador." },
+        {
+          error:
+            "DATABASE_URL não está configurada no Render. Cole a connection string do Neon em Environment.",
+        },
         { status: 503 }
       );
     }
@@ -56,41 +65,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ user: account.user, offline: true });
   }
 
-  resetDatabaseReachableCache();
-  const reachable = await isDatabaseReachable(true);
+  try {
+    const response = await withDatabaseRetry(async () => {
+      const result = await loginWithDatabase(email, password);
+      if (!result) {
+        return NextResponse.json({ error: "E-mail ou senha incorretos." }, { status: 401 });
+      }
+      return result;
+    });
 
-  if (reachable) {
-    try {
-      const response = await loginWithDatabase(email, password);
-      if (response) return response;
-      return NextResponse.json({ error: "E-mail ou senha incorretos." }, { status: 401 });
-    } catch (err) {
-      console.error("[auth/login] database error:", err);
-      return NextResponse.json(
-        {
-          error:
-            "Não foi possível conectar ao banco de dados. Aguarde alguns segundos e tente novamente.",
-        },
-        { status: 503 }
-      );
-    }
-  }
+    return response;
+  } catch (err) {
+    console.error("[auth/login] database error:", err);
 
-  if (isProduction) {
+    const detail = formatDatabaseError(err);
+    const hint =
+      detail.includes("Senha do banco") || detail.includes("DATABASE_URL")
+        ? " Atualize DATABASE_URL no Render com a URL atual do painel Neon (Connection string → Pooled)."
+        : " Confira https://mp-oficinas.onrender.com/api/health/db e se o Neon está ativo.";
+
     return NextResponse.json(
       {
-        error:
-          "Banco de dados indisponível no momento. Aguarde alguns segundos e tente o login novamente.",
+        error: `Banco de dados indisponível: ${detail}.${hint}`,
+        code: isPrismaConnectionError(err) ? "db_connection" : "db_error",
       },
       { status: 503 }
     );
   }
-
-  const account = DEMO_ACCOUNTS.find(
-    (a) => a.email.toLowerCase() === email && a.password === password
-  );
-  if (!account) {
-    return NextResponse.json({ error: "E-mail ou senha incorretos." }, { status: 401 });
-  }
-  return NextResponse.json({ user: account.user, offline: true });
 }
