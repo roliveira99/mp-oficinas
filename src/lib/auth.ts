@@ -1,6 +1,7 @@
+import { ADMIN_EMAIL, migrateStorageKey, storageKey } from "@/lib/brand";
 import type { AuthUser, UserRole } from "@/types/auth";
 
-const AUTH_KEY = "mp-oficinas-auth";
+const AUTH_KEY = storageKey("auth");
 
 interface DemoAccount {
   email: string;
@@ -10,11 +11,11 @@ interface DemoAccount {
 
 export const DEMO_ACCOUNTS: DemoAccount[] = [
   {
-    email: "admin@mpoficinas.com",
+    email: ADMIN_EMAIL,
     password: "admin123",
     user: {
       id: "demo-master",
-      email: "admin@mpoficinas.com",
+      email: ADMIN_EMAIL,
       name: "Administrador Master",
       role: "master",
       workshopId: null,
@@ -51,6 +52,7 @@ export function saveSession(user: AuthUser): void {
 
 export function getSession(): AuthUser | null {
   if (typeof window === "undefined") return null;
+  migrateStorageKey("auth");
   const raw = localStorage.getItem(AUTH_KEY);
   if (!raw) return null;
   try {

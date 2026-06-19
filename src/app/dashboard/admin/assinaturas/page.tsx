@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActionButton, DataTable, PageHeader } from "@/components/dashboard/DashboardUI";
 import { PermissionGuard } from "@/components/dashboard/PermissionGuard";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { subscriptionMessage } from "@/lib/brand";
 import { shareViaWhatsApp } from "@/lib/document-share";
 
 interface SubscriptionRow {
@@ -84,9 +85,10 @@ export default function AdminAssinaturasPage() {
             <ActionButton
               label="WhatsApp"
               onClick={() => {
-                const text = `Olá! Sua assinatura MP Oficinas (R$ ${s.monthlyValue.toFixed(2)}) ${
+                const text = subscriptionMessage(
+                  s.monthlyValue,
                   s.paymentLink ? `— pagamento: ${s.paymentLink}` : "está pendente."
-                }`;
+                );
                 shareViaWhatsApp(text);
               }}
             />

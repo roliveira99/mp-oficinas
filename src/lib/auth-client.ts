@@ -1,7 +1,8 @@
 import type { AuthUser } from "@/types/auth";
 import { DEMO_ACCOUNTS } from "@/lib/auth";
+import { migrateStorageKey, storageKey } from "@/lib/brand";
 
-const OFFLINE_SESSION_KEY = "mp-oficinas-offline-session";
+const OFFLINE_SESSION_KEY = storageKey("offline-session");
 
 export async function apiLogin(
   email: string,
@@ -26,6 +27,7 @@ export async function apiLogin(
 
   if (data.offline) {
     if (typeof window !== "undefined") {
+      migrateStorageKey("offline-session", sessionStorage);
       sessionStorage.setItem(OFFLINE_SESSION_KEY, JSON.stringify(data.user));
     }
     if (process.env.NODE_ENV === "production") {
@@ -53,6 +55,7 @@ export async function apiLogout(): Promise<void> {
 
 export async function apiGetSession(): Promise<AuthUser | null> {
   if (typeof window !== "undefined") {
+    migrateStorageKey("offline-session", sessionStorage);
     const offlineRaw = sessionStorage.getItem(OFFLINE_SESSION_KEY);
     if (offlineRaw) {
       try {

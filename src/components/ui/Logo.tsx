@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { APP_NAME, APP_SHORT, APP_TAGLINE } from "@/lib/brand";
 
 interface LogoProps {
   variant?: "default" | "light" | "system";
@@ -34,15 +35,15 @@ export function Logo({ variant = "default", size = "md" }: LogoProps) {
       <span
         className={`flex ${boxSize} items-center justify-center rounded font-bold ${boxClass}`}
       >
-        MP
+        {APP_SHORT}
       </span>
       <div className="leading-tight">
         <span className={`block font-semibold tracking-tight ${textSize} ${titleClass}`}>
-          MP Oficinas
+          {APP_NAME}
         </span>
         {size === "md" && (
           <span className={`hidden text-[11px] sm:block ${subtitleClass}`}>
-            Gestão automotiva
+            {APP_TAGLINE}
           </span>
         )}
       </div>

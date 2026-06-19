@@ -5,11 +5,11 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: mpoficinas
-      POSTGRES_PASSWORD: mpoficinas
-      POSTGRES_DB: mpoficinas
+      POSTGRES_USER: pesquisaaqui
+      POSTGRES_PASSWORD: pesquisaaqui
+      POSTGRES_DB: pesquisaaqui
     volumes:
-      - mp_oficinas_pg:/var/lib/postgresql/data
+      - pesquisa_aqui_pg:/var/lib/postgresql/data
 
 volumes:
-  mp_oficinas_pg:
+  pesquisa_aqui_pg:

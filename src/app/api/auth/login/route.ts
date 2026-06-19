@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { APP_NAME, getAppUrl } from "@/lib/brand";
 import { DEMO_ACCOUNTS } from "@/lib/auth";
 import {
   createSession,
@@ -96,7 +97,7 @@ export async function POST(request: Request) {
     }
     if (loginResult.status === "blocked") {
       return NextResponse.json(
-        { error: "Acesso suspenso. Entre em contato com o suporte MP Oficinas." },
+        { error: `Acesso suspenso. Entre em contato com o suporte ${APP_NAME}.` },
         { status: 403 }
       );
     }
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
     const hint =
       detail.includes("Senha do banco") || detail.includes("DATABASE_URL")
         ? " Atualize DATABASE_URL no Render com a URL atual do painel Neon (Connection string → Pooled)."
-        : " Confira https://mp-oficinas.onrender.com/api/health/db e se o Neon está ativo.";
+        : ` Confira ${getAppUrl()}/api/health/db e se o Neon está ativo.`;
 
     return NextResponse.json(
       {

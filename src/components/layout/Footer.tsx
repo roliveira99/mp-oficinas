@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { APP_NAME, CONTACT_PHONE, SUPPORT_EMAIL } from "@/lib/brand";
 import { Logo } from "@/components/ui/Logo";
 
 export function Footer() {
@@ -47,15 +48,15 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-foreground">Contato</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-muted">
-              <li>contato@mpoficinas.com.br</li>
-              <li>(11) 4000-0000</li>
+              <li>{SUPPORT_EMAIL}</li>
+              <li>{CONTACT_PHONE}</li>
               <li>Seg–Sex, 8h às 18h</li>
             </ul>
           </div>
         </div>
 
         <div className="mt-10 flex flex-col items-center justify-between gap-2 border-t border-border pt-6 text-xs text-muted sm:flex-row">
-          <span>© {new Date().getFullYear()} MP Oficinas. Todos os direitos reservados.</span>
+          <span>© {new Date().getFullYear()} {APP_NAME}. Todos os direitos reservados.</span>
           <span>Desenvolvido para o setor automotivo brasileiro</span>
         </div>
       </div>

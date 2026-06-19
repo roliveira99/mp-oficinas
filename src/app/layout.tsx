@@ -7,6 +7,7 @@ import { GlobalSiteBanner } from "@/components/site/GlobalSiteBanner";
 import { SitePopup } from "@/components/site/SitePopup";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ThemeScript } from "@/components/theme/ThemeScript";
+import { APP_META_DESCRIPTION, APP_NAME, APP_TAGLINE } from "@/lib/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,9 +21,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MP Oficinas — Encontre a oficina ideal",
-  description:
-    "Plataforma para clientes encontrarem oficinas mecânicas, estética automotiva e motos, com curiosidades do setor e dashboard gerencial para gestores.",
+  title: `${APP_NAME} — ${APP_TAGLINE}`,
+  description: APP_META_DESCRIPTION,
 };
 
 export default function RootLayout({

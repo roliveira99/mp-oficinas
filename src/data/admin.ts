@@ -1,3 +1,5 @@
+import { demoEmail } from "@/lib/brand";
+
 export interface PendingWorkshop {
   id: string;
   name: string;
@@ -104,9 +106,9 @@ export const subscriptions: Subscription[] = [
 ];
 
 export const platformAccounts: PlatformAccount[] = [
-  { id: "a1", name: "João Silva", email: "dono@mpoficinas.com", role: "dono", workshop: "Auto Center Silva", active: true },
-  { id: "a2", name: "Maria Santos", email: "gerencia@mpoficinas.com", role: "gerencia", workshop: "Auto Center Silva", active: true },
-  { id: "a3", name: "Pedro Oliveira", email: "mecanico@mpoficinas.com", role: "mecanico", workshop: "Auto Center Silva", active: true },
+  { id: "a1", name: "João Silva", email: demoEmail("dono"), role: "dono", workshop: "Auto Center Silva", active: true },
+  { id: "a2", name: "Maria Santos", email: demoEmail("gerencia"), role: "gerencia", workshop: "Auto Center Silva", active: true },
+  { id: "a3", name: "Pedro Oliveira", email: demoEmail("mecanico"), role: "mecanico", workshop: "Auto Center Silva", active: true },
   { id: "a4", name: "Carlos Mendes", email: "carlos@mototechpro.com.br", role: "dono", workshop: "Moto Tech Pro", active: true },
 ];
 

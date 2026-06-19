@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { Prisma, PrismaClient } from "@prisma/client";
+import { APP_NAME } from "../src/lib/brand";
 import { DEMO_ACCOUNTS } from "../src/lib/auth";
 import { workshops } from "../src/data/workshops";
 import { seedReviews, verifiedClientsByWorkshop } from "../src/data/verified-clients";
@@ -7,7 +8,7 @@ import { seedReviews, verifiedClientsByWorkshop } from "../src/data/verified-cli
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Seeding MP Oficinas...");
+  console.log(`Seeding ${APP_NAME}...`);
 
   for (const workshop of workshops) {
     await prisma.workshop.upsert({

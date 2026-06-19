@@ -1,3 +1,4 @@
+import { migrateStorageKey, storageKey } from "@/lib/brand";
 import type {
   CustomerQuotePayload,
   DocumentIssuer,
@@ -6,7 +7,7 @@ import type {
 } from "@/types/quote-document";
 import { formatCnpj, formatMoney, quoteTotal } from "@/types/quote-document";
 
-const KEY = "mp-oficinas-notas";
+const KEY = storageKey("notas");
 
 interface QuoteDocumentStore {
   issuers: DocumentIssuer[];
@@ -61,6 +62,7 @@ function readStore(): QuoteDocumentStore {
   if (typeof window === "undefined") {
     return { issuers: [], templates: [] };
   }
+  migrateStorageKey("notas");
   const raw = localStorage.getItem(KEY);
   if (!raw) {
     const initial: QuoteDocumentStore = {

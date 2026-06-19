@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ActionButton } from "@/components/dashboard/DashboardUI";
+import { subscriptionMessage } from "@/lib/brand";
 import { shareViaWhatsApp } from "@/lib/document-share";
 
 interface SubscriptionInfo {
@@ -31,9 +32,7 @@ export function SubscriptionBanner() {
 
   if (!showReminder && sub.paid) return null;
 
-  const text = `Assinatura MP Oficinas — R$ ${sub.monthlyValue.toFixed(2)}. ${
-    sub.paymentLink ? `Pague em: ${sub.paymentLink}` : "Entre em contato para regularizar."
-  }`;
+  const text = `${subscriptionMessage(sub.monthlyValue, sub.paymentLink ? `Pague em: ${sub.paymentLink}` : "Entre em contato para regularizar.")}`;
 
   return (
     <div className={`mb-6 rounded-xl border p-4 ${overdue ? "border-danger/50 bg-danger/10" : "border-accent/40 bg-accent-soft"}`}>

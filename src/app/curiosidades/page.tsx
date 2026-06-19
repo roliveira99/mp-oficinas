@@ -1,10 +1,11 @@
+import { APP_NAME } from "@/lib/brand";
 import Link from "next/link";
 import { CuriosityCard } from "@/components/curiosities/CuriosityCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { listArticles, seedArticlesIfEmpty } from "@/lib/db/articles";
 
 export const metadata = {
-  title: "Notícias — MP Oficinas",
+  title: `Notícias — ${APP_NAME}`,
   description: "Notícias e avisos relevantes sobre o setor automotivo.",
 };
 
@@ -16,7 +17,7 @@ export default async function CuriosidadesPage() {
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <SectionHeader
         eyebrow="Notícias relevantes"
-        title="Jornal MP Oficinas"
+        title={`Jornal ${APP_NAME}`}
         description="Conteúdos e avisos publicados pela equipe da plataforma"
       />
 

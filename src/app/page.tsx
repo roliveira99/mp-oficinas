@@ -1,3 +1,4 @@
+import { APP_NAME } from "@/lib/brand";
 import Link from "next/link";
 import { CuriosityCard } from "@/components/curiosities/CuriosityCard";
 import {
@@ -72,7 +73,7 @@ export default async function HomePage() {
           <SectionHeader
             eyebrow="Conteúdo"
             title="Notícias relevantes"
-            description="Avisos e artigos publicados pela equipe MP Oficinas."
+            description={`Avisos e artigos publicados pela equipe ${APP_NAME}.`}
             action={
               <Link
                 href="/curiosidades"

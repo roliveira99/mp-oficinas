@@ -1,6 +1,6 @@
-# MP Oficinas
+# Pesquisa Aqui
 
-Plataforma web para conectar clientes a oficinas mecânicas (carros, motos ou mistas), com curiosidades do setor automotivo e dashboards gerenciais com controle de acesso por perfil.
+Plataforma web para conectar clientes a oficinas mecânicas (carros, motos ou mistas), com conteúdo do setor automotivo e dashboards gerenciais com controle de acesso por perfil.
 
 ## Stack
 
@@ -47,28 +47,36 @@ Acesse [http://localhost:3000](http://localhost:3000) e faça login em `/login`.
 ## Perfis de acesso
 
 ### 👑 Administrador Master
-| Campo  | Valor                    |
-|--------|--------------------------|
-| E-mail | `admin@mpoficinas.com`   |
-| Senha  | `admin123`               |
+| Campo  | Valor                      |
+|--------|----------------------------|
+| E-mail | `admin@pesquisaaqui.com`   |
+| Senha  | `admin123`                 |
 
 ### 🏢 Dono da Oficina
-| Campo  | Valor                    |
-|--------|--------------------------|
-| E-mail | `dono@mpoficinas.com`    |
-| Senha  | `dono123`                |
+| Campo  | Valor                     |
+|--------|---------------------------|
+| E-mail | `dono@pesquisaaqui.com`   |
+| Senha  | `dono123`                 |
 
 ### 🖥️ Gerência
-| Campo  | Valor                       |
-|--------|-----------------------------|
-| E-mail | `gerencia@mpoficinas.com`   |
-| Senha  | `gerencia123`               |
+| Campo  | Valor                          |
+|--------|--------------------------------|
+| E-mail | `gerencia@pesquisaaqui.com`    |
+| Senha  | `gerencia123`                  |
 
 ### 🔧 Mecânico
-| Campo  | Valor                       |
-|--------|-----------------------------|
-| E-mail | `mecanico@mpoficinas.com`   |
-| Senha  | `mecanico123`               |
+| Campo  | Valor                          |
+|--------|--------------------------------|
+| E-mail | `mecanico@pesquisaaqui.com`    |
+| Senha  | `mecanico123`                  |
+
+## Migração de marca (produção)
+
+Se o banco ainda tiver contas `@mpoficinas.com`:
+
+```bash
+npm run db:migrate-brand
+```
 
 ## API (principais rotas)
 
@@ -85,10 +93,11 @@ Acesse [http://localhost:3000](http://localhost:3000) e faça login em `/login`.
 ## Scripts úteis
 
 ```bash
-npm run db:push    # Cria/atualiza tabelas
-npm run db:seed    # Popula dados demo
-npm run db:setup   # Docker + push + seed
-npm run build      # Build de produção
+npm run db:push          # Cria/atualiza tabelas
+npm run db:seed          # Popula dados demo
+npm run db:setup         # Docker + push + seed
+npm run db:migrate-brand # Atualiza e-mails legados no banco
+npm run build            # Build de produção
 ```
 
 ## Próximas migrações (localStorage → Postgres)

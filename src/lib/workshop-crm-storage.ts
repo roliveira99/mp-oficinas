@@ -1,3 +1,4 @@
+import { migrateStorageKey, storageKey } from "@/lib/brand";
 import { platformMechanicsByWorkshop } from "@/data/platform-mechanics";
 import { verifiedClientsByWorkshop } from "@/data/verified-clients";
 import { normalizeCpf } from "@/lib/cpf";
@@ -13,7 +14,7 @@ import type {
 } from "@/types/client";
 import type { CompletedServiceRecord, VerifiedClient } from "@/types/review";
 
-const CRM_KEY = "mp-oficinas-crm";
+const CRM_KEY = storageKey("crm");
 
 function seedFictionalMechanics(workshopId: string): FictionalMechanic[] {
   if (workshopId !== "1") return [];
@@ -147,6 +148,7 @@ function migrateCrmData(data: WorkshopCrmData, workshopId: string): WorkshopCrmD
 
 function readAllCrm(): Record<string, WorkshopCrmData> {
   if (typeof window === "undefined") return {};
+  migrateStorageKey("crm");
   const raw = localStorage.getItem(CRM_KEY);
   return raw ? (JSON.parse(raw) as Record<string, WorkshopCrmData>) : {};
 }

@@ -1,11 +1,13 @@
+import { migrateStorageKey, storageKey } from "@/lib/brand";
 import type { AgendaRequest, CatalogItem, SupplierContact, WorkshopCatalog } from "@/types/workshop";
 
-const AGENDA_KEY = "mp-oficinas-agenda-solicitacoes";
-const SUPPLIERS_KEY = "mp-oficinas-fornecedores";
-const CATALOG_KEY = "mp-oficinas-catalogo";
+const AGENDA_KEY = storageKey("agenda-solicitacoes");
+const SUPPLIERS_KEY = storageKey("fornecedores");
+const CATALOG_KEY = storageKey("catalogo");
 
 export function getAgendaRequests(workshopId?: string): AgendaRequest[] {
   if (typeof window === "undefined") return [];
+  migrateStorageKey("agenda-solicitacoes");
   const raw = localStorage.getItem(AGENDA_KEY);
   if (!raw) return [];
   try {
@@ -24,6 +26,7 @@ export const defaultSuppliers: SupplierContact[] = [
 
 export function getSuppliers(workshopId: string): SupplierContact[] {
   if (typeof window === "undefined") return defaultSuppliers;
+  migrateStorageKey("fornecedores");
   const raw = localStorage.getItem(`${SUPPLIERS_KEY}-${workshopId}`);
   if (!raw) return defaultSuppliers;
   try {
@@ -39,6 +42,7 @@ export function saveSuppliers(workshopId: string, suppliers: SupplierContact[]) 
 
 export function getCatalogOverride(workshopId: string): WorkshopCatalog | null {
   if (typeof window === "undefined") return null;
+  migrateStorageKey("catalogo");
   const raw = localStorage.getItem(`${CATALOG_KEY}-${workshopId}`);
   if (!raw) return null;
   try {

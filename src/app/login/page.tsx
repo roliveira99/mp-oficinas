@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { DashboardThemeToggle } from "@/components/dashboard/DashboardThemeToggle";
+import { APP_NAME } from "@/lib/brand";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -64,7 +65,7 @@ export default function LoginPage() {
             </ul>
           </div>
           <p className="text-xs text-[var(--dash-sidebar-text)]">
-            © MP Oficinas — Plataforma de gestão automotiva
+            © {APP_NAME} — Plataforma de gestão automotiva
           </p>
         </div>
 

@@ -64,7 +64,7 @@ export const curiosities: Curiosity[] = [
     summary:
       "Verifique avaliações, transparência no orçamento, garantia nos serviços e se a oficina é especializada no seu tipo de veículo.",
     content:
-      "Uma oficina confiável explica o problema antes de iniciar o serviço, apresenta orçamento detalhado e oferece garantia. Peça indicações, leia avaliações online e prefira locais com profissionais certificados. Oficinas especializadas (carros, motos ou mistas) tendem a ter ferramentas e conhecimento mais adequados ao seu veículo. Plataformas como o MP Oficinas ajudam a comparar perfis e serviços antes de decidir.",
+      "Uma oficina confiável explica o problema antes de iniciar o serviço, apresenta orçamento detalhado e oferece garantia. Peça indicações, leia avaliações online e prefira locais com profissionais certificados. Oficinas especializadas (carros, motos ou mistas) tendem a ter ferramentas e conhecimento mais adequados ao seu veículo. Plataformas como o Pesquisa Aqui ajudam a comparar perfis e serviços antes de decidir.",
     category: "Dicas",
     icon: "✅",
   },

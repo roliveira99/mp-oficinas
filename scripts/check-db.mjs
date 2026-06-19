@@ -10,7 +10,7 @@ async function main() {
   const url = process.env.DATABASE_URL ?? "";
   if (!url.startsWith("postgresql://") && !url.startsWith("postgres://")) {
     console.error("❌ DATABASE_URL inválida no .env");
-    console.error("   Exemplo: postgresql://usuario:senha@localhost:5432/mpoficinas");
+    console.error("   Exemplo: postgresql://usuario:senha@localhost:5432/pesquisaaqui");
     process.exit(1);
   }
 

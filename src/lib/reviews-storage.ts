@@ -1,13 +1,15 @@
+import { migrateStorageKey, storageKey } from "@/lib/brand";
 import { getRemovedReviewIds } from "@/lib/admin-platform-storage";
 import { seedReviews, verifiedClientsByWorkshop } from "@/data/verified-clients";
 import { normalizeCpf } from "@/lib/cpf";
 import { getVerifiedClientsFromCrm } from "@/lib/workshop-crm-storage";
 import type { ReviewStats, StarRating, VerifiedClient, WorkshopReview } from "@/types/review";
 
-const REVIEWS_KEY = "mp-oficinas-avaliacoes";
+const REVIEWS_KEY = storageKey("avaliacoes");
 
 function readAllReviews(): WorkshopReview[] {
   if (typeof window === "undefined") return seedReviews;
+  migrateStorageKey("avaliacoes");
   const raw = localStorage.getItem(REVIEWS_KEY);
   const stored: WorkshopReview[] = raw ? (JSON.parse(raw) as WorkshopReview[]) : [];
   const byKey = new Map<string, WorkshopReview>();

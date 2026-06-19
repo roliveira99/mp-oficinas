@@ -1,5 +1,6 @@
 "use client";
 
+import { whatsappWorkshopMessage } from "@/lib/brand";
 import type { Workshop } from "@/types/workshop";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
@@ -8,7 +9,7 @@ interface WorkshopContactActionsProps {
 }
 
 export function WorkshopContactActions({ workshop }: WorkshopContactActionsProps) {
-  const message = `Olá, ${workshop.name}! Vi o perfil de vocês no MP Oficinas e gostaria de mais informações.`;
+  const message = whatsappWorkshopMessage(workshop.name, "info");
   const whatsappUrl = buildWhatsAppUrl(workshop.whatsapp, message);
 
   return (

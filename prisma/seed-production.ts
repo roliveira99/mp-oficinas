@@ -1,13 +1,27 @@
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
+import {
+  ADMIN_EMAIL,
+  LEGACY_DEMO_EMAIL_DOMAIN,
+} from "../src/lib/brand";
 
 const prisma = new PrismaClient();
 
-const ADMIN_EMAIL = "admin@mpoficinas.com";
+const LEGACY_ADMIN_EMAIL = `admin@${LEGACY_DEMO_EMAIL_DOMAIN}`;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "admin123";
 
 async function main() {
   console.log("Reset de produção — removendo dados demo...");
+
+  const legacyAdmin = await prisma.user.findUnique({
+    where: { email: LEGACY_ADMIN_EMAIL },
+  });
+  if (legacyAdmin) {
+    await prisma.user.update({
+      where: { id: legacyAdmin.id },
+      data: { email: ADMIN_EMAIL },
+    });
+  }
 
   await prisma.$transaction([
     prisma.session.deleteMany(),

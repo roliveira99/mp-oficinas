@@ -1,3 +1,4 @@
+import { migrateStorageKey, storageKey } from "@/lib/brand";
 import type {
   AnnouncementPlacement,
   AnnouncementStyle,
@@ -9,7 +10,7 @@ import type {
 import { sponsorshipTierPriority } from "@/types/platform-admin";
 import type { Workshop } from "@/types/workshop";
 
-const SETTINGS_KEY = "mp-oficinas-admin-plataforma";
+const SETTINGS_KEY = storageKey("admin-plataforma");
 
 const defaultSettings: PlatformAdminSettings = {
   sponsorships: [
@@ -44,6 +45,7 @@ const defaultSettings: PlatformAdminSettings = {
 
 function readSettings(): PlatformAdminSettings {
   if (typeof window === "undefined") return defaultSettings;
+  migrateStorageKey("admin-plataforma");
   const raw = localStorage.getItem(SETTINGS_KEY);
   if (!raw) {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(defaultSettings));
