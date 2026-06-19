@@ -8,7 +8,6 @@ export type Permission =
   | "admin.dashboard_geral"
   | "admin.controle_assinaturas"
   | "admin.bloquear_oficinas"
-  | "admin.definir_planos"
   | "admin.suporte"
   | "admin.moderar_avaliacoes"
   | "admin.gerenciar_patrocinios"
