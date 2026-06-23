@@ -26,18 +26,7 @@ const defaultSettings: PlatformAdminSettings = {
       updatedAt: "2026-06-01T12:00:00.000Z",
     },
   ],
-  announcements: [
-    {
-      id: "ann-seed-1",
-      title: "Encontre oficinas perto de você",
-      message: "Compare perfis, avaliações e catálogos — sem criar conta para entrar em contato.",
-      placement: "site_geral",
-      style: "info",
-      displayType: "banner",
-      active: true,
-      createdAt: "2026-06-10T10:00:00.000Z",
-    },
-  ],
+  announcements: [],
   removedReviewIds: [],
 };
 
@@ -167,9 +156,11 @@ export async function getActiveAnnouncements(
 ): Promise<SiteAnnouncement[]> {
   const settings = await getPlatformSettings();
   let list = settings.announcements.filter((a) => a.active);
-  if (displayType) list = list.filter((a) => (a.displayType ?? "banner") === displayType);
+  if (displayType) {
+    list = list.filter((a) => (a.displayType ?? "banner") === displayType);
+  }
   if (!placement) return list;
-  return list.filter((a) => a.placement === placement || a.placement === "site_geral");
+  return list.filter((a) => a.placement === placement);
 }
 
 export async function getAllAnnouncements(): Promise<SiteAnnouncement[]> {

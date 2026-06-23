@@ -15,6 +15,7 @@
     "db:push": "node scripts/check-db.mjs && prisma db push",
     "db:seed": "node scripts/check-db.mjs && tsx prisma/seed.ts",
     "db:migrate-brand": "node scripts/check-db.mjs && tsx scripts/migrate-brand-emails.ts",
+    "db:cleanup-announcements": "node scripts/check-db.mjs && tsx scripts/cleanup-demo-announcements.ts",
     "db:reset-production": "node scripts/check-db.mjs && tsx prisma/seed-production.ts",
     "db:setup": "node scripts/check-db.mjs && prisma db push && tsx prisma/seed.ts",
     "db:docker": "docker compose up -d"

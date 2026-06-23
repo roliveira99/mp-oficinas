@@ -85,11 +85,17 @@ export async function POST(request: Request) {
   }
 
   if (action === "toggle-announcement") {
+    if (!userHasPermission(user, "admin.gerenciar_anuncios")) {
+      return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+    }
     await setAnnouncementActive(body.id as string, body.active as boolean);
     return NextResponse.json({ ok: true });
   }
 
   if (action === "delete-announcement") {
+    if (!userHasPermission(user, "admin.gerenciar_anuncios")) {
+      return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+    }
     await deleteAnnouncement(body.id as string);
     return NextResponse.json({ ok: true });
   }
@@ -111,6 +117,9 @@ export async function POST(request: Request) {
   }
 
   if (action === "list-announcements") {
+    if (!userHasPermission(user, "admin.gerenciar_anuncios")) {
+      return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+    }
     const announcements = await getAllAnnouncements();
     return NextResponse.json({ announcements });
   }

@@ -152,20 +152,6 @@ async function main() {
     });
   }
 
-  await prisma.siteAnnouncement.upsert({
-    where: { id: "ann-seed-1" },
-    create: {
-      id: "ann-seed-1",
-      title: "Encontre oficinas perto de você",
-      message: "Compare perfis, avaliações e catálogos — sem criar conta para entrar em contato.",
-      placement: "site_geral",
-      style: "info",
-      active: true,
-      createdAt: new Date("2026-06-10T10:00:00.000Z"),
-    },
-    update: { active: true },
-  });
-
   const workshopId = "1";
 
   const seedVehicles = [

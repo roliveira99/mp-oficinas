@@ -29,17 +29,7 @@ const defaultSettings: PlatformAdminSettings = {
       updatedAt: "2026-06-01T12:00:00.000Z",
     },
   ],
-  announcements: [
-    {
-      id: "ann-seed-1",
-      title: "Encontre oficinas perto de você",
-      message: "Compare perfis, avaliações e catálogos — sem criar conta para entrar em contato.",
-      placement: "site_geral",
-      style: "info",
-      active: true,
-      createdAt: "2026-06-10T10:00:00.000Z",
-    },
-  ],
+  announcements: [],
   removedReviewIds: [],
 };
 
@@ -138,9 +128,9 @@ export function restoreReviewByAdmin(reviewId: string): void {
 }
 
 export function getActiveAnnouncements(placement?: AnnouncementPlacement): SiteAnnouncement[] {
-  const list = readSettings().announcements.filter((a) => a.active);
+  const list = readSettings().announcements.filter((a) => a.active && (a.displayType ?? "banner") === "banner");
   if (!placement) return list;
-  return list.filter((a) => a.placement === placement || a.placement === "site_geral");
+  return list.filter((a) => a.placement === placement);
 }
 
 export function getAllAnnouncements(): SiteAnnouncement[] {

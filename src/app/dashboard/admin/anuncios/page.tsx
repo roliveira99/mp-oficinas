@@ -194,7 +194,10 @@ export default function AdminAnunciosPage() {
 
   return (
     <PermissionGuard permissions={["admin.gerenciar_anuncios"]}>
-      <PageHeader title="Conteúdo do site" description="Banners, pop-ups, notícias e avisos para visitantes" />
+      <PageHeader
+        title="Conteúdo do site"
+        description="Somente banners e pop-ups criados aqui aparecem no site. Escolha o local exato de cada anúncio."
+      />
       {feedback && <p className="dash-alert mb-4">{feedback}</p>}
       <TabPanel tabs={tabs} activeTab={tab} onTabChange={setTab} />
     </PermissionGuard>

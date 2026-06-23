@@ -15,7 +15,11 @@ export async function fetchSortedWorkshops(): Promise<{
 export async function fetchActiveAnnouncements(
   placement: AnnouncementPlacement
 ): Promise<SiteAnnouncement[]> {
-  const res = await fetch(`/api/platform?placement=${encodeURIComponent(placement)}`);
+  const params = new URLSearchParams({
+    placement,
+    displayType: "banner",
+  });
+  const res = await fetch(`/api/platform?${params}`);
   if (!res.ok) return [];
   const data = (await res.json()) as { announcements: SiteAnnouncement[] };
   return data.announcements;
