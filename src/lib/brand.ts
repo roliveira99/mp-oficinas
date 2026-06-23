@@ -41,7 +41,7 @@ export function getAppUrl(): string {
     process.env.APP_URL ??
     (process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
-      : "https://mp-oficinas.onrender.com");
+      : "https://pesquisa-aqui.onrender.com");
   return fromEnv.replace(/\/$/, "");
 }
 
