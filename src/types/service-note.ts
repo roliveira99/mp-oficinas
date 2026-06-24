@@ -8,7 +8,7 @@ export interface ServiceNoteRecord {
   clientId: string | null;
   budgetId: string | null;
   orderId: string | null;
-  status: "rascunho" | "emitida" | "paga";
+  status: "rascunho" | "emitida" | "paga" | "cancelada";
   lineItems: DocumentLineItem[];
   paymentMethods: string[];
   subtotal: number;

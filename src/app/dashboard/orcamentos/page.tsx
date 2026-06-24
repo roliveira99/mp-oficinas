@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActionButton, DataTable, PageHeader } from "@/components/dashboard/DashboardUI";
 import {
   MechanicAssigneeSelect,
@@ -8,15 +8,14 @@ import {
 } from "@/components/dashboard/MechanicAssigneeSelect";
 import { PermissionGuard } from "@/components/dashboard/PermissionGuard";
 import { DocumentLineBuilder } from "@/components/dashboard/DocumentLineBuilder";
+import { BudgetDocumentActions } from "@/components/documents/BudgetDocument";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { budgetStatusColors, budgetStatusLabels } from "@/lib/labels";
 import {
-  buildBudgetPrintHtml,
-  buildBudgetShareText,
-  printDocument,
-  shareViaEmail,
-  shareViaWhatsApp,
-} from "@/lib/document-share";
+  budgetToPayload,
+  getBudgetTemplate,
+  resolveBudgetIssuer,
+} from "@/lib/budget-document";
 import { fetchCrm } from "@/lib/api/crm-client";
 import { getOperationalConfig } from "@/lib/verticals/operational";
 import type { BudgetRecord } from "@/types/budget";
@@ -25,11 +24,15 @@ import type { DocumentLineItem } from "@/types/document-line";
 
 export default function OrcamentosPage() {
   const { user } = useAuth();
+  const workshopId = user?.workshopId ?? "1";
+  const workshopName = user?.workshopName ?? "Oficina";
+
   const [budgets, setBudgets] = useState<BudgetRecord[]>([]);
   const [vehicles, setVehicles] = useState<WorkshopVehicle[]>([]);
   const [assignees, setAssignees] = useState<MechanicAssignee[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [previewBudget, setPreviewBudget] = useState<BudgetRecord | null>(null);
   const [vehicleId, setVehicleId] = useState("");
   const [lineItems, setLineItems] = useState<DocumentLineItem[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
@@ -39,6 +42,15 @@ export default function OrcamentosPage() {
   const [error, setError] = useState("");
   const canApprove = user?.role === "dono" || user?.role === "gerencia";
   const ops = getOperationalConfig(user?.workshopVertical);
+
+  const issuer = useMemo(
+    () => resolveBudgetIssuer(workshopId, workshopName),
+    [workshopId, workshopName]
+  );
+  const template = useMemo(() => getBudgetTemplate(workshopId), [workshopId]);
+  const previewPayload = previewBudget
+    ? budgetToPayload(previewBudget, template.validityDays)
+    : null;
 
   const refresh = useCallback(async () => {
     const [budgetRes, crm] = await Promise.all([
@@ -134,26 +146,8 @@ export default function OrcamentosPage() {
     await refresh();
   }
 
-  function sendBudget(b: BudgetRecord, channel: "whatsapp" | "email" | "print") {
-    const text = buildBudgetShareText({
-      id: b.id,
-      workshopName: user?.workshopName ?? "Oficina",
-      vehiclePlate: b.vehiclePlate,
-      vehicleModel: b.vehicleModel,
-      lineItems: b.lineItems,
-      total: b.total,
-    });
-    if (channel === "whatsapp") shareViaWhatsApp(text);
-    else if (channel === "email") shareViaEmail(`Orçamento ${b.id}`, text);
-    else printDocument(`Orçamento ${b.id}`, buildBudgetPrintHtml({
-      id: b.id,
-      workshopName: user?.workshopName ?? "Oficina",
-      vehiclePlate: b.vehiclePlate,
-      vehicleModel: b.vehicleModel,
-      lineItems: b.lineItems,
-      total: b.total,
-    }));
-    void budgetAction("sent", b.id);
+  async function markBudgetSent(budgetId: string) {
+    await budgetAction("sent", budgetId);
     setMessage("Orçamento marcado como enviado ao cliente.");
   }
 
@@ -171,7 +165,7 @@ export default function OrcamentosPage() {
     >
       <PageHeader
         title="Orçamentos"
-        description="Propostas comerciais — não entram no financeiro até virarem nota de serviço após aprovação do cliente"
+        description="Propostas comerciais com documento profissional — imprimir, enviar imagem por WhatsApp ou e-mail"
         actions={
           <ActionButton
             label={showForm ? "Fechar" : "+ Novo orçamento"}
@@ -260,9 +254,11 @@ export default function OrcamentosPage() {
             {b.status !== "convertido" && b.status !== "rejeitado" && (
               <ActionButton label="Editar" onClick={() => startEdit(b)} />
             )}
-            <ActionButton label="WhatsApp" onClick={() => sendBudget(b, "whatsapp")} />
-            <ActionButton label="E-mail" onClick={() => sendBudget(b, "email")} />
-            <ActionButton label="Imprimir" onClick={() => sendBudget(b, "print")} />
+            <ActionButton
+              label="Ver / Enviar"
+              variant="primary"
+              onClick={() => setPreviewBudget(b)}
+            />
           </div>,
         ])}
       />
@@ -270,6 +266,25 @@ export default function OrcamentosPage() {
       <p className="mt-6 rounded-lg border border-border bg-surface p-4 text-sm text-muted">
         Orçamentos aprovados podem ser convertidos em <strong>nota de serviço</strong> na tela Notas de serviço — só então entram no financeiro e na produtividade do mecânico.
       </p>
+
+      {previewBudget && previewPayload && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Orçamento"
+        >
+          <div className="w-full max-w-3xl rounded-xl bg-surface p-5 shadow-xl sm:p-6">
+            <BudgetDocumentActions
+              payload={previewPayload}
+              issuer={issuer}
+              template={template}
+              onClose={() => setPreviewBudget(null)}
+              onSent={() => void markBudgetSent(previewBudget.id)}
+            />
+          </div>
+        </div>
+      )}
     </PermissionGuard>
   );
 }

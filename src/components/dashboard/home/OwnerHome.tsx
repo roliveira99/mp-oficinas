@@ -102,6 +102,11 @@ export function OwnerHome() {
               </Link>
             </li>
             <li>
+              <Link href="/dashboard/agenda" className="text-accent hover:underline">
+                Aprovar solicitações de agenda
+              </Link>
+            </li>
+            <li>
               <Link href="/dashboard/perfil" className="text-accent hover:underline">
                 Atualizar perfil público
               </Link>

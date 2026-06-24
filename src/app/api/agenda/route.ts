@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { createAgendaRequest, getAgendaRequests, updateAgendaStatus } from "@/lib/db/agenda";
 import { getWorkshopById } from "@/lib/db/workshops";
-import { getRequestUser, userHasPermission } from "@/lib/db/request-auth";
+import { getRequestUser, userCanManageAgenda } from "@/lib/db/request-auth";
 
 export async function GET(request: Request) {
   const user = await getRequestUser();
-  if (!user || !userHasPermission(user, "gerencia.agenda")) {
+  if (!user?.workshopId || !userCanManageAgenda(user)) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
 
-  const requests = await getAgendaRequests(user.workshopId ?? undefined);
+  const requests = await getAgendaRequests(user.workshopId);
   return NextResponse.json({ requests });
 }
 
@@ -28,14 +28,14 @@ export async function POST(request: Request) {
 
   if (body.action === "approve" || body.action === "reject") {
     const user = await getRequestUser();
-    if (!user || !userHasPermission(user, "gerencia.agenda")) {
+    if (!user?.workshopId || !userCanManageAgenda(user)) {
       return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
     }
     if (!body.id) {
       return NextResponse.json({ error: "ID obrigatório." }, { status: 400 });
     }
 
-    const requests = await getAgendaRequests(user.workshopId ?? undefined);
+    const requests = await getAgendaRequests(user.workshopId);
     const req = requests.find((r) => r.id === body.id);
     const status = body.action === "approve" ? "aprovado" : "recusado";
     await updateAgendaStatus(body.id, status);

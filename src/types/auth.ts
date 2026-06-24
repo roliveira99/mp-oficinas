@@ -37,6 +37,7 @@ export type Permission =
   | "owner.relatorios_financeiros"
   | "owner.relatorios_operacionais"
   | "owner.relatorios_produtividade"
+  | "owner.agenda"
   | "gerencia.dashboard"
   | "gerencia.aprovar_orcamentos"
   | "gerencia.alterar_orcamentos"

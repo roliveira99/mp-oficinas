@@ -85,7 +85,7 @@ export default function NotasClientePage() {
     >
       <PageHeader
         title="Notas ao cliente"
-        description="Modelo padrão com CNPJ, dados da oficina e serviços — imprimir ou enviar por WhatsApp"
+        description="Documento profissional com CNPJ e serviços — imprimir, enviar imagem por WhatsApp ou e-mail"
         actions={
           isOwner ? (
             <Link
@@ -190,6 +190,7 @@ export default function NotasClientePage() {
                     payload={payload}
                     issuer={issuer}
                     template={template}
+                    clientPhone={client?.phone}
                     onClose={() => {
                       setPreview(false);
                       setActiveOrder(null);

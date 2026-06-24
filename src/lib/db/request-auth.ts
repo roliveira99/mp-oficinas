@@ -21,6 +21,10 @@ export function userHasPermission(user: AuthUser, permission: Permission): boole
   return rolePermissions[user.role]?.includes(permission) ?? false;
 }
 
+export function userCanManageAgenda(user: AuthUser): boolean {
+  return userHasPermission(user, "owner.agenda") || userHasPermission(user, "gerencia.agenda");
+}
+
 export async function userHasEffectivePermission(
   user: AuthUser,
   permission: Permission

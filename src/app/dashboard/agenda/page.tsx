@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/dashboard/DashboardUI";
 import { PermissionGuard } from "@/components/dashboard/PermissionGuard";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { apiAgendaAction, fetchAllAgenda } from "@/lib/api/crm-client";
+import { agendaPermissions } from "@/lib/permissions";
 import type { AgendaRequest } from "@/types/workshop";
 
 const statusLabels: Record<AgendaRequest["status"], string> = {
@@ -86,7 +87,7 @@ export default function AgendaPage() {
   }, [weekStart]);
 
   return (
-    <PermissionGuard permissions={["gerencia.agenda"]}>
+    <PermissionGuard permissions={agendaPermissions}>
       <PageHeader
         title="Agenda"
         description="Solicitações do site público e horários confirmados — aprove e avise o cliente no WhatsApp"

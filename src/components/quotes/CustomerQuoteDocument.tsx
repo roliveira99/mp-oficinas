@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useState } from "react";
 import type {
   CustomerQuotePayload,
   DocumentIssuer,
@@ -13,8 +13,25 @@ import {
   lineItemTotal,
   quoteTotal,
 } from "@/types/quote-document";
-import { buildWhatsAppUrl } from "@/lib/whatsapp";
-import { buildQuoteWhatsAppText } from "@/lib/quote-document-storage";
+import { shareViaEmail } from "@/lib/document-share";
+import {
+  buildWhatsAppImageIntro,
+  downloadDocumentBlob,
+  shareDocumentImageViaWhatsApp,
+} from "@/lib/document-whatsapp";
+import {
+  buildCustomerQuoteDocumentHtml,
+  exportCustomerQuotePng,
+  openCustomerQuotePrintWindow,
+} from "@/lib/quote-document-html";
+
+function formatIssuedDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
 
 interface CustomerQuotePrintViewProps {
   payload: CustomerQuotePayload;
@@ -28,92 +45,101 @@ export function CustomerQuotePrintView({ payload, issuer, template }: CustomerQu
   const total = quoteTotal(payload.items);
 
   return (
-    <div className="quote-print-root mx-auto max-w-2xl bg-white p-8 text-sm text-gray-900 print:p-6">
-      <header className="border-b border-gray-300 pb-4">
-        <p className="text-xs uppercase tracking-wide text-gray-500">{template.documentTitle}</p>
-        <h1 className="mt-1 text-2xl font-bold">{issuer.tradeName}</h1>
-        <p className="text-gray-600">{issuer.legalName}</p>
-        <p className="mt-2 text-gray-700">CNPJ: {formatCnpj(issuer.cnpj)}</p>
-        <p className="text-gray-700">
-          {issuer.address} — {issuer.city}/{issuer.state}
+    <div className="mx-auto max-w-[720px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+      <div className="h-1.5 bg-gradient-to-r from-blue-700 to-blue-500" />
+      <div className="p-8 text-sm text-slate-900">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+          {template.documentTitle}
         </p>
-        <p className="text-gray-700">
-          {issuer.phone}
-          {issuer.email ? ` · ${issuer.email}` : ""}
-        </p>
-      </header>
+        <h1 className="mt-1 text-2xl font-extrabold leading-tight">{issuer.tradeName}</h1>
+        <p className="mt-1 text-slate-600">{issuer.legalName}</p>
 
-      {template.headerNote && (
-        <p className="mt-4 rounded bg-gray-50 p-3 text-gray-700">{template.headerNote}</p>
-      )}
-
-      <section className="mt-6 grid gap-1 text-gray-800">
-        <p>
-          <strong>Cliente:</strong> {payload.clientName}
-        </p>
-        {payload.clientCpf && (
+        <div className="my-5 border-y border-slate-200 py-4 leading-relaxed text-slate-700">
           <p>
-            <strong>CPF:</strong> {payload.clientCpf}
+            <strong className="text-slate-900">CNPJ:</strong> {formatCnpj(issuer.cnpj)}
+          </p>
+          <p>
+            {issuer.address} — {issuer.city}/{issuer.state}
+          </p>
+          <p>
+            {issuer.phone}
+            {issuer.email ? ` · ${issuer.email}` : ""}
+          </p>
+        </div>
+
+        {template.headerNote && (
+          <p className="mb-5 rounded-r-lg border-l-4 border-blue-500 bg-blue-50 px-3.5 py-3 text-xs leading-relaxed text-blue-900">
+            {template.headerNote}
           </p>
         )}
-        {payload.vehicle && (
-          <p>
-            <strong>Veículo:</strong> {payload.vehicle}
-            {payload.vehiclePlate ? ` · Placa ${payload.vehiclePlate}` : ""}
-          </p>
-        )}
-        <p>
-          <strong>Referência:</strong> {payload.orderId}
-        </p>
-        <p>
-          <strong>Data:</strong>{" "}
-          {new Date(payload.issuedAt).toLocaleDateString("pt-BR", {
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-          })}
-        </p>
-        <p>
-          <strong>Validade:</strong> {validUntil.toLocaleDateString("pt-BR")} ({template.validityDays}{" "}
-          dias)
-        </p>
-      </section>
 
-      <table className="mt-6 w-full border-collapse text-left">
-        <thead>
-          <tr className="border-b-2 border-gray-800 text-xs uppercase">
-            <th className="py-2 pr-2">Serviço / peça</th>
-            <th className="py-2 px-2 text-center">Qtd</th>
-            <th className="py-2 px-2 text-right">Unit.</th>
-            <th className="py-2 pl-2 text-right">Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>
-          {payload.items.map((item, idx) => (
-            <tr key={idx} className="border-b border-gray-200">
-              <td className="py-2.5 pr-2">{item.description}</td>
-              <td className="py-2.5 px-2 text-center">{item.quantity}</td>
-              <td className="py-2.5 px-2 text-right">{formatMoney(item.unitPrice)}</td>
-              <td className="py-2.5 pl-2 text-right font-medium">{formatMoney(lineItemTotal(item))}</td>
+        <div className="mb-6 space-y-1 text-slate-800">
+          <p>
+            <strong>Cliente:</strong> {payload.clientName}
+          </p>
+          {payload.clientCpf && (
+            <p>
+              <strong>CPF:</strong> {payload.clientCpf}
+            </p>
+          )}
+          {(payload.vehicle || payload.vehiclePlate) && (
+            <p>
+              <strong>Veículo:</strong>{" "}
+              {[payload.vehicle, payload.vehiclePlate ? `Placa ${payload.vehiclePlate}` : ""]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
+          <p>
+            <strong>Referência:</strong> {payload.orderId}
+          </p>
+          <p>
+            <strong>Data:</strong> {formatIssuedDate(payload.issuedAt)}
+          </p>
+          <p>
+            <strong>Validade:</strong> {validUntil.toLocaleDateString("pt-BR")} ({template.validityDays}{" "}
+            dias)
+          </p>
+        </div>
+
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b-2 border-slate-900 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              <th className="py-2.5 pr-2 text-left">Serviço / peça</th>
+              <th className="px-2 py-2.5 text-right">Qtd</th>
+              <th className="px-2 py-2.5 text-right">Unit.</th>
+              <th className="py-2.5 pl-2 text-right">Subtotal</th>
             </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan={3} className="pt-4 text-right font-bold">
-              Total
-            </td>
-            <td className="pt-4 pl-2 text-right text-lg font-bold">{formatMoney(total)}</td>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody>
+            {payload.items.map((item, idx) => (
+              <tr key={idx} className="border-b border-slate-100">
+                <td className="py-3 pr-2">{item.description}</td>
+                <td className="px-2 py-3 text-right tabular-nums">{item.quantity}</td>
+                <td className="px-2 py-3 text-right tabular-nums">{formatMoney(item.unitPrice)}</td>
+                <td className="py-3 pl-2 text-right font-semibold tabular-nums">
+                  {formatMoney(lineItemTotal(item))}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={3} className="pt-4 text-right text-base font-extrabold">
+                Total
+              </td>
+              <td className="pt-4 pl-2 text-right text-lg font-extrabold">{formatMoney(total)}</td>
+            </tr>
+          </tfoot>
+        </table>
 
-      <section className="mt-6 space-y-2 text-gray-700">
-        <p>
-          <strong>Formas de pagamento:</strong> {template.paymentTerms}
-        </p>
-        {template.footerNote && <p className="text-xs">{template.footerNote}</p>}
-      </section>
+        <footer className="mt-6 border-t border-slate-200 pt-4 text-xs leading-relaxed text-slate-600">
+          <p>
+            <strong>Formas de pagamento:</strong> {template.paymentTerms}
+          </p>
+          {template.footerNote && <p className="mt-2">{template.footerNote}</p>}
+        </footer>
+      </div>
     </div>
   );
 }
@@ -122,64 +148,130 @@ interface QuoteDocumentActionsProps {
   payload: CustomerQuotePayload;
   issuer: DocumentIssuer;
   template: QuoteTemplateSettings;
+  clientPhone?: string;
   onClose?: () => void;
 }
 
-export function QuoteDocumentActions({ payload, issuer, template, onClose }: QuoteDocumentActionsProps) {
-  const printRef = useRef<HTMLDivElement>(null);
+export function QuoteDocumentActions({
+  payload,
+  issuer,
+  template,
+  clientPhone,
+  onClose,
+}: QuoteDocumentActionsProps) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [status, setStatus] = useState("");
+  const filename = `documento-${payload.orderId.replace(/[^\w-]/g, "_")}.png`;
 
-  function handlePrint() {
-    const content = printRef.current;
-    if (!content) return;
-    const win = window.open("", "_blank");
-    if (!win) return;
-    win.document.write(`
-      <!DOCTYPE html><html><head><title>${template.documentTitle} — ${payload.orderId}</title>
-      <style>
-        body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; color: #111; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 8px; }
-        @media print { body { padding: 0; } }
-      </style></head><body>${content.innerHTML}</body></html>`);
-    win.document.close();
-    win.focus();
-    win.print();
+  async function handleDownloadImage() {
+    setBusy("image");
+    setStatus("");
+    try {
+      const blob = await exportCustomerQuotePng(payload, issuer, template);
+      downloadDocumentBlob(blob, filename);
+      setStatus("Imagem salva. Use-a no WhatsApp ou e-mail.");
+    } catch {
+      setStatus("Não foi possível gerar a imagem. Use Imprimir / PDF.");
+    } finally {
+      setBusy(null);
+    }
   }
 
-  function handleWhatsApp() {
-    const text = buildQuoteWhatsAppText(payload, issuer, template);
-    const phone = payload.clientPhone || issuer.phone;
-    window.open(buildWhatsAppUrl(phone, text), "_blank", "noopener,noreferrer");
+  function handlePrint() {
+    openCustomerQuotePrintWindow(payload, issuer, template);
+  }
+
+  function handleOpenPreview() {
+    const html = buildCustomerQuoteDocumentHtml(payload, issuer, template);
+    const win = window.open("", "_blank", "noopener,noreferrer");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+  }
+
+  async function handleWhatsApp() {
+    setBusy("whatsapp");
+    setStatus("");
+    try {
+      const blob = await exportCustomerQuotePng(payload, issuer, template);
+      const mode = await shareDocumentImageViaWhatsApp({
+        blob,
+        filename,
+        documentTitle: template.documentTitle,
+        tradeName: issuer.tradeName,
+        reference: payload.orderId,
+        phone: clientPhone || issuer.phone,
+      });
+      setStatus(
+        mode === "shared"
+          ? "Documento compartilhado como imagem."
+          : `Imagem salva (${filename}). Anexe-a na conversa do WhatsApp.`
+      );
+    } catch {
+      setStatus("Erro ao gerar imagem. Use Baixar imagem ou Imprimir / PDF.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function handleEmail() {
+    const intro = buildWhatsAppImageIntro(template.documentTitle, issuer.tradeName, payload.orderId);
+    shareViaEmail(
+      `${template.documentTitle} — ${issuer.tradeName}`,
+      `${intro}\n\nPara anexar o documento, use "Baixar imagem" ou "Imprimir / PDF" e salve como PDF.`
+    );
   }
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap gap-2 print:hidden">
-        <button
-          type="button"
-          onClick={handlePrint}
-          className="btn btn-primary"
-        >
+        <button type="button" onClick={handlePrint} className="btn btn-primary">
           Imprimir / PDF
         </button>
         <button
           type="button"
-          onClick={handleWhatsApp}
-          className="rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white"
+          onClick={() => void handleDownloadImage()}
+          disabled={busy === "image"}
+          className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-surface-hover disabled:opacity-60"
         >
-          Enviar WhatsApp
+          {busy === "image" ? "Gerando…" : "Baixar imagem"}
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleWhatsApp()}
+          disabled={busy === "whatsapp"}
+          className="rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {busy === "whatsapp" ? "Preparando…" : "Enviar WhatsApp"}
+        </button>
+        <button
+          type="button"
+          onClick={handleEmail}
+          className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-hover"
+        >
+          E-mail
+        </button>
+        <button
+          type="button"
+          onClick={handleOpenPreview}
+          className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-hover"
+        >
+          Abrir em nova aba
         </button>
         {onClose && (
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-hover"
           >
             Fechar
           </button>
         )}
       </div>
-      <div ref={printRef}>
+
+      {status && <p className="mb-4 text-sm text-muted">{status}</p>}
+
+      <div className="bg-slate-100 p-4 print:bg-white print:p-0">
         <CustomerQuotePrintView payload={payload} issuer={issuer} template={template} />
       </div>
     </div>

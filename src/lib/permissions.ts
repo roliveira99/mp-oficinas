@@ -60,6 +60,7 @@ const donoPermissions: Permission[] = [
   "owner.relatorios_financeiros",
   "owner.relatorios_operacionais",
   "owner.relatorios_produtividade",
+  "owner.agenda",
 ];
 
 const gerenciaPermissions: Permission[] = [
@@ -215,6 +216,7 @@ export const navigationByRole: Record<UserRole, NavItem[]> = {
     { href: "/dashboard/notas-servico", label: "Notas de serviço", icon: "file", permission: "owner.emissao_pdf", group: "Operacional" },
     { href: "/dashboard/estoque", label: "Estoque", icon: "box", permission: "owner.estoque", group: "Operacional" },
     { href: "/dashboard/servicos", label: "Serviços", icon: "wrench", permission: "owner.cadastro_servicos", group: "Operacional" },
+    { href: "/dashboard/agenda", label: "Agenda", icon: "calendar", permission: "owner.agenda", group: "Operacional" },
     { href: "/dashboard/cadastros", label: "Cadastros", icon: "clipboard", permission: "owner.cadastro_clientes", group: "Cadastros" },
     { href: "/dashboard/catalogo", label: "Catálogo público", icon: "package", permission: "owner.cadastro_servicos", group: "Cadastros" },
     { href: "/dashboard/perfil", label: "Perfil da oficina", icon: "sparkles", permission: "owner.cadastro_servicos", group: "Cadastros" },
@@ -255,6 +257,9 @@ export function hasPermission(role: UserRole, permission: Permission): boolean {
 export function hasAnyPermission(role: UserRole, permissions: Permission[]): boolean {
   return permissions.some((p) => hasPermission(role, p));
 }
+
+/** Permissões que liberam gestão da agenda (solicitações e aprovações). */
+export const agendaPermissions: Permission[] = ["owner.agenda", "gerencia.agenda"];
 
 export function getRoleLabel(role: UserRole, vertical?: BusinessVertical | null, journalNiche?: string | null): string {
   if (role === "jornalista" && journalNiche) {

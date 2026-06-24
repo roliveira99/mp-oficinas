@@ -43,7 +43,7 @@ export async function getRhOverview(workshopId: string): Promise<{
   const [comps, advances, notes, fictional, users] = await Promise.all([
     prisma.employeeCompensation.findMany({ where: { workshopId } }),
     prisma.salaryAdvance.findMany({ where: { workshopId }, orderBy: { date: "desc" } }),
-    prisma.serviceNote.findMany({ where: { workshopId, status: { not: "rascunho" } } }),
+    prisma.serviceNote.findMany({ where: { workshopId, status: { in: ["emitida", "paga"] } } }),
     prisma.fictionalMechanic.findMany({ where: { workshopId, active: true } }),
     prisma.user.findMany({ where: { workshopId, role: "mecanico" } }),
   ]);

@@ -42,6 +42,7 @@ async function notesForMechanic(workshopId: string, scope: MechanicScope, from: 
     where: {
       workshopId,
       issuedAt: { gte: from, lte: to },
+      status: { in: ["emitida", "paga"] },
       OR: [
         { mechanicKind: "platform", mechanicId: { in: ids } },
         { mechanicName: scope.name },

@@ -395,6 +395,7 @@ enum ServiceNoteStatus {
   rascunho
   emitida
   paga
+  cancelada
 }
 
 enum FinancialEntryKind {

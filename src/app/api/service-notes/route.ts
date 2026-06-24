@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  cancelServiceNote,
   createServiceNote,
   createServiceNoteFromBudget,
   createServiceNoteFromOrder,
@@ -94,6 +95,13 @@ export async function POST(request: Request) {
     }
     case "mark-paid": {
       const result = await markServiceNotePaid(workshopId, body.noteId as string);
+      return NextResponse.json(result);
+    }
+    case "cancel": {
+      if (!userHasPermission(user, "gerencia.emissao_notas") && !userHasPermission(user, "owner.emissao_pdf")) {
+        return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+      }
+      const result = await cancelServiceNote(workshopId, body.noteId as string);
       return NextResponse.json(result);
     }
     default:

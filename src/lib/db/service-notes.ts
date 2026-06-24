@@ -6,6 +6,11 @@ import type { MechanicKind } from "@/types/client";
 
 export type { ServiceNoteRecord };
 
+/** Notas que entram em receita, comissões e relatórios operacionais. */
+export function isActiveServiceNoteStatus(status: string): boolean {
+  return status !== "rascunho" && status !== "cancelada";
+}
+
 function mapNote(row: {
   id: string;
   workshopId: string;
@@ -179,7 +184,7 @@ export async function createServiceNote(
         vehicleId: input.vehicleId ?? null,
         clientId: input.clientId ?? vehicleClientId,
         budgetId: input.orderId ?? null,
-        status: "emitida",
+        status: "paga",
         lineItems: input.lineItems as object,
         paymentMethods: (input.paymentMethods ?? []) as object,
         subtotal,
@@ -220,6 +225,8 @@ export async function createServiceNote(
         name: `Nota ${created.id}`,
         amount: total,
         dueAt: new Date(),
+        paid: true,
+        paidAt: new Date(),
         serviceNoteId: created.id,
       },
     });
@@ -333,10 +340,77 @@ export async function markServiceNotePaid(
   workshopId: string,
   noteId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const result = await prisma.serviceNote.updateMany({
-    where: { id: noteId, workshopId },
-    data: { status: "paga" },
+  const note = await prisma.serviceNote.findFirst({ where: { id: noteId, workshopId } });
+  if (!note) return { ok: false, error: "Nota não encontrada." };
+  if (note.status === "cancelada") return { ok: false, error: "Nota cancelada não pode ser marcada como paga." };
+
+  await prisma.$transaction(async (tx) => {
+    await tx.serviceNote.updateMany({
+      where: { id: noteId, workshopId },
+      data: { status: "paga" },
+    });
+    await tx.financialEntry.updateMany({
+      where: { workshopId, serviceNoteId: noteId },
+      data: { paid: true, paidAt: new Date() },
+    });
   });
-  if (result.count === 0) return { ok: false, error: "Nota não encontrada." };
+
+  return { ok: true };
+}
+
+export async function cancelServiceNote(
+  workshopId: string,
+  noteId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const note = await prisma.serviceNote.findFirst({ where: { id: noteId, workshopId } });
+  if (!note) return { ok: false, error: "Nota não encontrada." };
+  if (note.status === "cancelada") return { ok: false, error: "Esta nota já está cancelada." };
+  if (note.status === "rascunho") return { ok: false, error: "Rascunho não pode ser cancelado." };
+
+  const lineItems = note.lineItems as unknown as DocumentLineItem[];
+
+  await prisma.$transaction(async (tx) => {
+    if (note.stockDeducted) {
+      for (const line of lineItems) {
+        if (line.kind !== "peca" || !line.catalogItemId) continue;
+        const stock = await tx.stockItem.findFirst({
+          where: { workshopId, catalogItemId: line.catalogItemId },
+        });
+        if (stock) {
+          await tx.stockItem.update({
+            where: { id: stock.id },
+            data: { quantity: stock.quantity + line.quantity },
+          });
+        }
+      }
+    }
+
+    await tx.financialEntry.deleteMany({
+      where: { workshopId, serviceNoteId: noteId },
+    });
+
+    await tx.workshopBudget.updateMany({
+      where: { workshopId, serviceNoteId: noteId },
+      data: { status: "aprovado", serviceNoteId: null },
+    });
+
+    if (note.budgetId) {
+      const order = await tx.crmServiceOrder.findFirst({
+        where: { id: note.budgetId, workshopId, status: "concluido" },
+      });
+      if (order) {
+        await tx.crmServiceOrder.update({
+          where: { id: order.id },
+          data: { status: "em_andamento" },
+        });
+      }
+    }
+
+    await tx.serviceNote.update({
+      where: { id: noteId },
+      data: { status: "cancelada", stockDeducted: false },
+    });
+  });
+
   return { ok: true };
 }

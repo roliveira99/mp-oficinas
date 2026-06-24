@@ -29,7 +29,8 @@ export async function GET() {
     prisma.crmClient.count({ where: { workshopId } }),
   ]);
 
-  const notesTotal = notes.reduce((s, n) => s + n.total, 0);
+  const activeNotes = notes.filter((n) => n.status !== "cancelada");
+  const notesTotal = activeNotes.reduce((s, n) => s + n.total, 0);
   const budgetsPending = budgets.filter((b) => b.status === "aguardando_aprovacao").length;
   const budgetsApproved = budgets.filter((b) => b.status === "aprovado").length;
 
@@ -45,20 +46,21 @@ export async function GET() {
       commissionsPaid: finance.commissionsPaid,
       commissionsPending: finance.commissionsPending,
       balance: finance.balance,
-      serviceNotesCount: notes.length,
+      serviceNotesCount: activeNotes.length,
       serviceNotesTotal: notesTotal,
       budgetsPending,
       budgetsApproved,
       vehiclesRegistered: vehicles,
       clientsRegistered: clients,
     },
-    serviceNotes: notes.slice(0, 100).map((n) => ({
+    serviceNotes: activeNotes.slice(0, 100).map((n) => ({
       id: n.id,
       vehicle: n.vehiclePlate,
       mechanic: n.mechanicName,
       total: n.total,
       commission: n.commissionAmount,
       date: n.issuedAt,
+      status: n.status,
     })),
     financialEntries: finance.entries.map((e) => ({
       name: e.name,

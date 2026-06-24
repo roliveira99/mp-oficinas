@@ -45,3 +45,17 @@ export const budgetStatusColors = {
   rejeitado: "dash-badge opacity-60",
   convertido: "dash-badge",
 } as const;
+
+export const serviceNoteStatusLabels = {
+  rascunho: "Rascunho",
+  emitida: "Emitida",
+  paga: "Paga",
+  cancelada: "Cancelada",
+} as const;
+
+export const serviceNoteStatusColors = {
+  rascunho: "dash-badge opacity-60",
+  emitida: "dash-badge font-medium text-foreground",
+  paga: "dash-badge",
+  cancelada: "dash-badge opacity-60",
+} as const;

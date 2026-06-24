@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import type { FinancialEntryKind } from "@prisma/client";
 import type { FinanceInstallment, FinancialEntryRecord } from "@/types/finance";
+import { isActiveServiceNoteStatus } from "@/lib/db/service-notes";
 
 export type { FinancialEntryRecord };
 
@@ -81,13 +82,13 @@ export async function getFinanceOverview(workshopId: string): Promise<FinanceOve
   ]);
 
   const revenueFromNotes = notes
-    .filter((n) => n.status !== "rascunho")
+    .filter((n) => isActiveServiceNoteStatus(n.status))
     .reduce((s, n) => s + n.total, 0);
   const commissionsPaid = notes
-    .filter((n) => n.commissionPaid)
+    .filter((n) => isActiveServiceNoteStatus(n.status) && n.commissionPaid)
     .reduce((s, n) => s + (n.commissionAmount ?? 0), 0);
   const commissionsPending = notes
-    .filter((n) => !n.commissionPaid && n.commissionAmount)
+    .filter((n) => isActiveServiceNoteStatus(n.status) && !n.commissionPaid && n.commissionAmount)
     .reduce((s, n) => s + (n.commissionAmount ?? 0), 0);
 
   const mapped = entries.map(mapEntry);
