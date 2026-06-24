@@ -17,6 +17,7 @@
     "db:migrate-brand": "node scripts/check-db.mjs && tsx scripts/migrate-brand-emails.ts",
     "db:migrate-assets": "node scripts/check-db.mjs && tsx scripts/migrate-assets-schema.ts",
     "db:backfill-assets": "node scripts/check-db.mjs && tsx scripts/backfill-assets.ts",
+    "db:seed-journal": "node scripts/check-db.mjs && tsx scripts/seed-journal-news.ts",
     "db:reset-production": "node scripts/check-db.mjs && tsx prisma/seed-production.ts",
     "db:setup": "node scripts/check-db.mjs && prisma db push && tsx prisma/seed.ts",
     "db:docker": "docker compose up -d"
