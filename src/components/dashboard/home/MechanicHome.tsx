@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { FeatureList, PageHeader } from "@/components/dashboard/DashboardUI";
 import { Icon } from "@/components/ui/Icon";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getOperationalConfig } from "@/lib/verticals/operational";
 import { roleRestrictions } from "@/lib/permissions";
+import { orderStatusLabels } from "@/lib/labels";
+import type { MechanicDashboardStats } from "@/types/dashboard-insights";
 
 const mecanicoFeatures = [
   "Criar orçamento",
@@ -17,24 +21,49 @@ const mecanicoFeatures = [
   "Atualizar status do serviço",
 ];
 
-const myServices = [
-  { id: "OS-002", vehicle: "Toyota Corolla 2019", service: "Alinhamento", status: "Em andamento" },
-  { id: "OS-006", vehicle: "Honda CG 160", service: "Revisão completa", status: "Pendente" },
-  { id: "OS-007", vehicle: "VW Polo 2021", service: "Troca de pastilhas", status: "Concluído" },
-];
-
 export function MechanicHome() {
   const { user } = useAuth();
+  const [stats, setStats] = useState<MechanicDashboardStats | null>(null);
+  const ops = getOperationalConfig(user?.workshopVertical);
+  const roleLabel = ops.roles.operator;
+
+  const load = useCallback(async () => {
+    const res = await fetch("/api/dashboard/mechanic-stats?period=month", { credentials: "include" });
+    if (res.ok) setStats((await res.json()) as MechanicDashboardStats);
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const recent = stats?.recentOrders ?? [];
 
   return (
     <div>
-      <PageHeader title="Meu painel" description={`${user?.name} — Mecânico`} />
+      <PageHeader title="Meu painel" description={`${user?.name} — ${roleLabel}`} />
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Serviços hoje" value={3} icon="wrench" />
-        <StatCard label="Orçamentos (mês)" value={12} icon="clipboard" trend="Este mês" />
-        <StatCard label="Comissões (mês)" value="R$ 1.840" icon="wallet" />
-        <StatCard label="Produtividade" value="94%" icon="chart" trend="+3%" />
+        <StatCard label="Serviços ativos" value={stats?.ordersActive ?? "—"} icon="wrench" />
+        <StatCard
+          label="Concluídos no mês"
+          value={stats?.ordersCompleted ?? "—"}
+          icon="clipboard"
+        />
+        <StatCard
+          label="Comissões (mês)"
+          value={
+            stats
+              ? `R$ ${stats.commissionTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+              : "—"
+          }
+          icon="wallet"
+        />
+        <StatCard
+          label="Produtividade"
+          value={stats ? `${stats.productivityPercent}%` : "—"}
+          icon="chart"
+          trend={stats ? `${stats.ordersCompleted} de ${stats.ordersTotal} OS` : undefined}
+        />
       </div>
 
       <div className="card mb-8 overflow-hidden">
@@ -45,15 +74,23 @@ export function MechanicHome() {
           </Link>
         </div>
         <ul className="divide-y divide-border">
-          {myServices.map((s) => (
-            <li key={s.id} className="flex items-center justify-between px-5 py-4 text-sm">
-              <div>
-                <p className="font-medium text-foreground">{s.id} — {s.vehicle}</p>
-                <p className="text-muted">{s.service}</p>
-              </div>
-              <span className="dash-badge">{s.status}</span>
-            </li>
-          ))}
+          {recent.length === 0 ? (
+            <li className="px-5 py-6 text-center text-sm text-muted">Nenhum serviço atribuído a você.</li>
+          ) : (
+            recent.map((s) => (
+              <li key={s.id} className="flex items-center justify-between px-5 py-4 text-sm">
+                <div>
+                  <p className="font-medium text-foreground">
+                    {s.id} — {s.vehicle || "Sem referência"}
+                  </p>
+                  <p className="text-muted">{s.service}</p>
+                </div>
+                <span className="dash-badge">
+                  {orderStatusLabels[s.status as keyof typeof orderStatusLabels] ?? s.status}
+                </span>
+              </li>
+            ))
+          )}
         </ul>
       </div>
 

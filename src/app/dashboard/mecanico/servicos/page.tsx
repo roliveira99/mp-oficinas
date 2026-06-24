@@ -7,10 +7,9 @@ import { PermissionGuard } from "@/components/dashboard/PermissionGuard";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { formatCpf } from "@/lib/cpf";
 import { orderStatusLabels } from "@/lib/labels";
+import { getMechanicScopeForUser, matchesMechanicScope } from "@/lib/db/mechanic-scope";
 import { apiCompleteOrder, apiUpdateOrderStatus, fetchCrm } from "@/lib/api/crm-client";
 import type { ServiceOrderStatus, WorkshopServiceOrder } from "@/types/client";
-
-const PLATFORM_MECHANIC_ID = "platform-pedro";
 
 const statusOptions: { label: string; value: ServiceOrderStatus }[] = [
   { label: "Pendente", value: "pendente" },
@@ -26,14 +25,13 @@ export default function MecanicoServicosPage() {
 
   const refresh = useCallback(async () => {
     const data = await fetchCrm();
+    const scope = user ? getMechanicScopeForUser(user) : null;
     setOrders(
-      data.orders.filter(
-        (o) =>
-          (o.mechanicKind === "platform" && o.mechanicId === PLATFORM_MECHANIC_ID) ||
-          o.mechanicName === user?.name
-      )
+      scope
+        ? data.orders.filter((o) => matchesMechanicScope(o, scope))
+        : data.orders
     );
-  }, [user?.name]);
+  }, [user]);
 
   useEffect(() => {
     void refresh();

@@ -7,7 +7,7 @@ import {
   markServiceNotePaid,
   setServiceNoteCommissionPaid,
 } from "@/lib/db/service-notes";
-import { getAllMechanicAssignees } from "@/lib/db/crm";
+import { getMechanicScopeForUser, matchesMechanicScope } from "@/lib/db/mechanic-scope";
 import { getRequestUser, userHasPermission } from "@/lib/db/request-auth";
 import type { MechanicKind } from "@/types/client";
 import type { DocumentLineItem } from "@/types/document-line";
@@ -23,18 +23,15 @@ export async function GET(request: Request) {
   const mechanicOnly = searchParams.get("mechanicOnly") === "1";
 
   const filters: Parameters<typeof listServiceNotes>[1] = { period: period ?? undefined };
-  if (mechanicOnly && user.role === "mecanico" && user.workshopId) {
-    const assignees = await getAllMechanicAssignees(user.workshopId);
-    const mine =
-      assignees.find((a) => a.kind === "platform" && a.name === user.name) ??
-      assignees.find((a) => a.kind === "platform");
-    if (mine) {
-      filters.mechanicId = mine.id;
-      filters.mechanicKind = mine.kind;
+  let notes = await listServiceNotes(user.workshopId, filters);
+
+  if (mechanicOnly && user.role === "mecanico") {
+    const scope = getMechanicScopeForUser(user);
+    if (scope) {
+      notes = notes.filter((n) => matchesMechanicScope(n, scope));
     }
   }
 
-  const notes = await listServiceNotes(user.workshopId, filters);
   return NextResponse.json({ notes });
 }
 
