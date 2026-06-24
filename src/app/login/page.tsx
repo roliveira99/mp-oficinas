@@ -10,6 +10,7 @@ import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { apiLogin } from "@/lib/auth-client";
+import { getDashboardHomeHref } from "@/lib/permissions";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (user) router.replace("/dashboard");
+    if (user) router.replace(getDashboardHomeHref(user.role));
   }, [user, router]);
 
   if (user) return null;
@@ -33,7 +34,7 @@ export default function LoginPage() {
       return;
     }
     setUser(result.user);
-    router.push("/dashboard");
+    router.push(getDashboardHomeHref(result.user.role));
   }
 
   return (
@@ -82,7 +83,8 @@ export default function LoginPage() {
 
             <h2 className="text-2xl font-semibold tracking-tight">Entrar</h2>
             <p className="mt-1 text-sm text-muted">
-              Use as credenciais fornecidas pelo administrador da plataforma.
+              Use seu e-mail e senha. O painel aberto depende do seu perfil — gestor,
+              equipe, jornalista ou administrador.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-4">
@@ -119,7 +121,7 @@ export default function LoginPage() {
               {error && <p className="dash-alert dash-alert-error">{error}</p>}
 
               <Button type="submit" variant="primary" className="w-full">
-                Entrar no painel
+                Entrar
               </Button>
             </form>
 

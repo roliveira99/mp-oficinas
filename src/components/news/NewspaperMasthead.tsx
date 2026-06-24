@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiteSearchBar } from "@/components/search/SiteSearchBar";
 import { APP_NAME } from "@/lib/brand";
 import { formatArticleDate } from "@/lib/article-slug";
 import {
@@ -35,6 +36,7 @@ export function NewspaperMasthead({ compact = false }: { compact?: boolean }) {
         <p className={`mt-2 text-muted ${compact ? "text-sm" : "text-sm sm:text-base"}`}>
           Cidade, esporte, negócios, cultura e notícias da sua região
         </p>
+        <SiteSearchBar variant="masthead" />
       </div>
       {!compact && (
         <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted sm:hidden">

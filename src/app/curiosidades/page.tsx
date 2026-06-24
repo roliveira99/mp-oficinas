@@ -24,7 +24,7 @@ export default async function CuriosidadesPage() {
   const { lead, sidebar } = groupArticlesForJournalPage(articles);
 
   return (
-    <div className="newspaper-page mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div id="jornal-completo" className="newspaper-page mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <NewspaperMasthead />
       <NewspaperCategoryNav activeTab="inicio" />
 

@@ -17,6 +17,11 @@ export function directoryUrl(params?: { q?: string; segmento?: BusinessVertical;
   return qs ? `${DIRECTORY_PATH}?${qs}` : DIRECTORY_PATH;
 }
 
+export function searchUrl(q?: string): string {
+  if (!q?.trim()) return "/busca";
+  return `/busca?q=${encodeURIComponent(q.trim())}`;
+}
+
 export function getPlatformTerminology(): PlatformTerminology {
   return {
     directoryNav: "Negócios",

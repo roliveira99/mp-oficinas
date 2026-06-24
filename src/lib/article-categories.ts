@@ -29,7 +29,7 @@ export function isValidArticleCategory(value: string): boolean {
 
 export type JournalTabId = "inicio" | "classificados" | (typeof ARTICLE_CATEGORIES)[number]["value"];
 
-export const JOURNAL_HOME_HREF = "/curiosidades";
+export const JOURNAL_HOME_HREF = "/";
 export const JOURNAL_CLASSIFIEDS_HREF = "/curiosidades/classificados";
 
 export function journalCategoryHref(category: string): string {

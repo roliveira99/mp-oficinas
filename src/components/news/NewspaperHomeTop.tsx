@@ -4,7 +4,7 @@ import {
   NewspaperHeadlineGrid,
   NewspaperCategoryColumns,
 } from "@/components/news/NewspaperArticles";
-import { NewspaperMasthead } from "@/components/news/NewspaperMasthead";
+import { NewspaperCategoryNav, NewspaperMasthead } from "@/components/news/NewspaperMasthead";
 import { Icon } from "@/components/ui/Icon";
 import { NewspaperClassifiedsSection } from "@/components/news/NewspaperClassifieds";
 import type { ClassifiedAdRecord } from "@/lib/db/classifieds";
@@ -22,9 +22,10 @@ export function NewspaperHomeTop({
 
   if (!lead) {
     return (
-      <section className="border-b border-border bg-surface">
+      <section id="jornal" className="border-b border-border bg-surface">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <NewspaperMasthead compact />
+          <NewspaperCategoryNav activeTab="inicio" />
           {articles.length === 0 && premiumClassifieds.length === 0 ? (
             <p className="text-center text-muted">Em breve, novas manchetes no jornal.</p>
           ) : null}
@@ -35,9 +36,10 @@ export function NewspaperHomeTop({
   }
 
   return (
-    <section className="border-b border-border bg-surface">
+    <section id="jornal" className="border-b border-border bg-surface">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
         <NewspaperMasthead compact />
+        <NewspaperCategoryNav activeTab="inicio" />
 
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
@@ -52,7 +54,7 @@ export function NewspaperHomeTop({
 
         <div className="mt-8 flex justify-center border-t border-border pt-6">
           <Link
-            href="/curiosidades"
+            href="/curiosidades#jornal-completo"
             className="inline-flex items-center gap-2 text-sm font-semibold text-accent hover:text-accent-hover"
           >
             Ver jornal completo — todas as seções

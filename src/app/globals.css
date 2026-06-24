@@ -658,3 +658,171 @@ body {
 .newspaper-classified-card {
   position: relative;
 }
+
+/* Busca global do site */
+.site-search {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.site-search-masthead {
+  margin-top: 1.25rem;
+  width: 100%;
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.375rem 0.375rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, var(--accent) 15%);
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent-soft) 8%);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px -12px rgba(29, 78, 216, 0.18);
+}
+
+.site-search-masthead:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent),
+    0 8px 28px -10px rgba(29, 78, 216, 0.25);
+}
+
+.site-search-masthead .site-search-icon {
+  display: flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.site-search-masthead .site-search-input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 0.625rem 0.25rem;
+  font-size: 0.9375rem;
+  color: var(--foreground);
+}
+
+.site-search-masthead .site-search-input::placeholder {
+  color: var(--muted);
+}
+
+.site-search-masthead .site-search-input:focus {
+  outline: none;
+}
+
+.site-search-masthead .site-search-submit {
+  flex-shrink: 0;
+  border-radius: 9999px;
+  padding: 0.625rem 1.125rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  transition: background-color 0.15s ease;
+}
+
+.site-search-masthead .site-search-submit:hover {
+  background: var(--accent-hover);
+}
+
+.site-search-header-trigger {
+  display: inline-flex;
+  height: 2.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  padding: 0 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.site-search-header-trigger:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--accent-soft) 40%, var(--background));
+}
+
+.site-search-header {
+  display: flex;
+  min-width: 12rem;
+  max-width: 20rem;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+  background: var(--background);
+  padding: 0.25rem 0.375rem 0.25rem 0.75rem;
+  box-shadow: 0 4px 16px -8px rgba(29, 78, 216, 0.2);
+}
+
+.site-search-header:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.site-search-header .site-search-input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 0.375rem 0;
+  font-size: 0.875rem;
+  color: var(--foreground);
+}
+
+.site-search-header .site-search-input:focus {
+  outline: none;
+}
+
+.site-search-header .site-search-submit {
+  flex-shrink: 0;
+  border-radius: 9999px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+}
+
+.site-search-header .site-search-submit:hover {
+  background: var(--accent-hover);
+}
+
+.site-search-header-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 4rem;
+  z-index: 60;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  padding: 0.75rem 0 1rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 24px -16px rgba(15, 23, 42, 0.25);
+}
+
+@media (min-width: 768px) {
+  .site-search-header-panel {
+    display: none;
+  }
+}

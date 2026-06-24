@@ -175,6 +175,10 @@ export const navigationByRole: Record<UserRole, NavItem[]> = {
   ],
 };
 
+export function getDashboardHomeHref(role: UserRole): string {
+  return navigationByRole[role][0]?.href ?? "/dashboard";
+}
+
 export function hasPermission(role: UserRole, permission: Permission): boolean {
   return rolePermissions[role].includes(permission);
 }
