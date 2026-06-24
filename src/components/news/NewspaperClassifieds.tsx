@@ -67,9 +67,11 @@ export function NewspaperClassifiedCard({ ad }: { ad: ClassifiedAdRecord }) {
 export function NewspaperClassifiedsSection({
   ads,
   compact = false,
+  hideTitle = false,
 }: {
   ads: ClassifiedAdRecord[];
   compact?: boolean;
+  hideTitle?: boolean;
 }) {
   if (ads.length === 0) return null;
 
@@ -78,22 +80,24 @@ export function NewspaperClassifiedsSection({
       id="secao-classificados"
       className={`scroll-mt-24 ${compact ? "mt-10" : "mt-12"} border-t-2 border-foreground pt-8`}
     >
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="mb-2 flex items-center gap-2">
-            <h2 className="text-xl font-bold uppercase tracking-wide text-foreground">
-              Classificados premium
-            </h2>
-            <span className="newspaper-premium-badge inline-flex text-[10px]">Premium</span>
+      {!hideTitle && (
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <h2 className="text-xl font-bold uppercase tracking-wide text-foreground">
+                Classificados premium
+              </h2>
+              <span className="newspaper-premium-badge inline-flex text-[10px]">Premium</span>
+            </div>
+            <p className="text-sm text-muted">
+              Anúncios em destaque no jornal — vendas, serviços e oportunidades da região
+            </p>
           </div>
-          <p className="text-sm text-muted">
-            Anúncios em destaque no jornal — vendas, serviços e oportunidades da região
-          </p>
+          <Link href="/curiosidades/classificados" className="text-sm font-semibold text-accent hover:underline">
+            Ver seção →
+          </Link>
         </div>
-        <Link href="/classificados" className="text-sm font-semibold text-accent hover:underline">
-          Ver todos →
-        </Link>
-      </div>
+      )}
 
       <div className={`grid gap-6 ${compact ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
         {ads.map((ad) => (

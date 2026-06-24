@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { APP_NAME } from "@/lib/brand";
 import { NewspaperArticlePage } from "@/components/news/NewspaperArticlePage";
-import { NewspaperMasthead } from "@/components/news/NewspaperMasthead";
+import { NewspaperCategoryNav, NewspaperMasthead } from "@/components/news/NewspaperMasthead";
+import { isValidArticleCategory, type JournalTabId } from "@/lib/article-categories";
 import {
   getArticleBySlugOrId,
   getRelatedArticles,
@@ -28,10 +29,14 @@ export default async function CuriosidadeDetailPage({ params }: Props) {
   if (!article) notFound();
 
   const related = await getRelatedArticles(article.id, article.category);
+  const activeTab: JournalTabId = isValidArticleCategory(article.category)
+    ? article.category
+    : "inicio";
 
   return (
     <div className="newspaper-page mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <NewspaperMasthead />
+      <NewspaperMasthead compact />
+      <NewspaperCategoryNav activeTab={activeTab} />
       <NewspaperArticlePage article={article} related={related} />
     </div>
   );

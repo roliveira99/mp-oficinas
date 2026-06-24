@@ -27,5 +27,20 @@ export function isValidArticleCategory(value: string): boolean {
   return ARTICLE_CATEGORIES.some((c) => c.value === value);
 }
 
+export type JournalTabId = "inicio" | "classificados" | (typeof ARTICLE_CATEGORIES)[number]["value"];
+
+export const JOURNAL_HOME_HREF = "/curiosidades";
+export const JOURNAL_CLASSIFIEDS_HREF = "/curiosidades/classificados";
+
+export function journalCategoryHref(category: string): string {
+  return `/curiosidades/editoria/${category}`;
+}
+
+export function journalTabHref(tab: JournalTabId): string {
+  if (tab === "inicio") return JOURNAL_HOME_HREF;
+  if (tab === "classificados") return JOURNAL_CLASSIFIEDS_HREF;
+  return journalCategoryHref(tab);
+}
+
 /** Colunas exibidas na home do jornal (ordem editorial). */
 export const HOME_JOURNAL_COLUMNS = ["cidade", "esporte", "negocios"] as const;

@@ -5,7 +5,7 @@ import {
   formatArticleDateShort,
   formatCategoryLabel,
 } from "@/lib/article-slug";
-import { ARTICLE_CATEGORIES, HOME_JOURNAL_COLUMNS } from "@/lib/article-categories";
+import { ARTICLE_CATEGORIES, HOME_JOURNAL_COLUMNS, journalCategoryHref } from "@/lib/article-categories";
 import type { SiteArticleRecord } from "@/lib/db/articles";
 import { articlesByCategory } from "@/lib/db/articles";
 
@@ -224,7 +224,7 @@ export function NewspaperCategoryColumns({
             </ul>
             {def && (
               <Link
-                href={`/curiosidades#secao-${def.value}`}
+                href={journalCategoryHref(def.value)}
                 className="mt-3 inline-block text-xs font-semibold text-accent hover:underline"
               >
                 Mais em {def.label} →

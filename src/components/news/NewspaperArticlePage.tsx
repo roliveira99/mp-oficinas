@@ -30,7 +30,7 @@ export function NewspaperArticlePage({
 }) {
   return (
     <article className="mx-auto max-w-3xl">
-      <NewspaperBackLink />
+      <NewspaperBackLink category={article.category} />
 
       <header className="border-b border-border pb-8">
         <div className="mb-4 flex flex-wrap items-center gap-3 text-xs uppercase tracking-wider text-muted">
