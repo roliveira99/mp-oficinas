@@ -2,19 +2,24 @@ import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import type { User } from "@prisma/client";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
+import type { BusinessVertical } from "@/types/vertical";
 import type { AuthUser, UserRole } from "@/types/auth";
 
 export const SESSION_COOKIE = "mp_session";
 const SESSION_DAYS = 7;
 
-export function toAuthUser(user: User, workshopName: string | null): AuthUser {
+export function toAuthUser(
+  user: User,
+  workshop: { name: string; vertical?: BusinessVertical | null } | null
+): AuthUser {
   return {
     id: user.id,
     email: user.email,
     name: user.name,
     role: user.role as UserRole,
     workshopId: user.workshopId,
-    workshopName,
+    workshopName: workshop?.name ?? null,
+    workshopVertical: workshop?.vertical ?? null,
   };
 }
 
@@ -24,7 +29,7 @@ export async function verifyCredentials(
 ): Promise<AuthUser | null> {
   const user = await prisma.user.findUnique({
     where: { email: email.toLowerCase().trim() },
-    include: { workshop: { select: { name: true } } },
+    include: { workshop: { select: { name: true, vertical: true } } },
   });
 
   if (!user) return null;
@@ -32,7 +37,7 @@ export async function verifyCredentials(
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) return null;
 
-  return toAuthUser(user, user.workshop?.name ?? null);
+  return toAuthUser(user, user.workshop ? { name: user.workshop.name, vertical: user.workshop.vertical as BusinessVertical } : null);
 }
 
 export async function createSession(userId: string): Promise<string> {
@@ -55,7 +60,7 @@ export async function getSessionUser(token: string | undefined): Promise<AuthUse
       where: { token },
       include: {
         user: {
-          include: { workshop: { select: { name: true } } },
+          include: { workshop: { select: { name: true, vertical: true } } },
         },
       },
     });
@@ -65,7 +70,12 @@ export async function getSessionUser(token: string | undefined): Promise<AuthUse
       return null;
     }
 
-    return toAuthUser(session.user, session.user.workshop?.name ?? null);
+    return toAuthUser(
+      session.user,
+      session.user.workshop
+        ? { name: session.user.workshop.name, vertical: session.user.workshop.vertical as BusinessVertical }
+        : null
+    );
   } catch {
     return null;
   }

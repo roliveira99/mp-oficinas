@@ -10,15 +10,23 @@ export interface WorkshopClient {
   createdAt: string;
 }
 
+export type BusinessAssetType = "vehicle" | "generic" | "pet" | "property" | "order";
+
 export interface WorkshopVehicle {
   id: string;
   workshopId: string;
   clientId?: string | null;
+  assetType: BusinessAssetType;
+  referenceKey: string;
+  label: string;
   plate: string;
   model: string;
   year?: string;
   completedServices?: import("@/types/review").CompletedServiceRecord[];
 }
+
+/** Alias semântico — mesmo registro de CrmVehicle no banco. */
+export type WorkshopAsset = WorkshopVehicle;
 
 export type MechanicKind = "fictional" | "platform";
 

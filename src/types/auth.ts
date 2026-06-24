@@ -69,6 +69,7 @@ export interface AuthUser {
   role: UserRole;
   workshopId: string | null;
   workshopName: string | null;
+  workshopVertical?: import("@/types/vertical").BusinessVertical | null;
 }
 
 export interface NavItem {

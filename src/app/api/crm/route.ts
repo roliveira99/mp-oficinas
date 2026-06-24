@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  addAsset,
   addClient,
   addFictionalMechanic,
   addVehicle,
@@ -58,6 +59,16 @@ export async function POST(request: Request) {
         });
         return NextResponse.json(result);
       }
+      case "add-asset": {
+        const result = await addAsset(workshopId, {
+          referenceKey: body.referenceKey as string,
+          label: body.label as string,
+          assetType: body.assetType as import("@/types/client").BusinessAssetType | undefined,
+          year: body.year as string | undefined,
+          clientId: body.clientId as string | undefined,
+        });
+        return NextResponse.json(result);
+      }
       case "add-vehicle": {
         const result = await addVehicle(workshopId, {
           plate: body.plate as string,
@@ -81,7 +92,7 @@ export async function POST(request: Request) {
       }
       case "create-order": {
         const result = await createOrder(workshopId, {
-          vehicleId: body.vehicleId as string,
+          vehicleId: body.vehicleId as string | undefined,
           service: body.service as string,
           value: body.value as number,
           mechanicId: body.mechanicId as string,

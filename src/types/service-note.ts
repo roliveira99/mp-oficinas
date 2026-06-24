@@ -4,7 +4,7 @@ import type { MechanicKind } from "@/types/client";
 export interface ServiceNoteRecord {
   id: string;
   workshopId: string;
-  vehicleId: string;
+  vehicleId: string | null;
   clientId: string | null;
   budgetId: string | null;
   orderId: string | null;

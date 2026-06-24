@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActionButton, DataTable } from "@/components/dashboard/DashboardUI";
 import { formatCpf } from "@/lib/cpf";
-import { apiAddVehicle, fetchCrm } from "@/lib/api/crm-client";
+import { apiAddAsset, apiAddVehicle, fetchCrm } from "@/lib/api/crm-client";
+import type { OperationalConfig } from "@/lib/verticals/operational";
 import type { WorkshopClient, WorkshopVehicle } from "@/types/client";
 
 export function ClientesTab({ workshopId }: { workshopId: string }) {
@@ -21,8 +22,8 @@ export function ClientesTab({ workshopId }: { workshopId: string }) {
   return (
     <div>
       <p className="mb-4 text-sm text-muted">
-        Perfil do cliente serve apenas para avaliar a oficina e agendar horário — não fica vinculado a veículos.
-        Clientes aparecem aqui quando se cadastram na avaliação (CPF, nome e data de nascimento).
+        Perfil do cliente serve para avaliar o negócio e agendar horário — não fica vinculado aos ativos
+        operacionais. Clientes aparecem aqui quando se cadastram na avaliação (CPF, nome e data de nascimento).
       </p>
 
       {clients.length === 0 ? (
@@ -47,17 +48,21 @@ export function ClientesTab({ workshopId }: { workshopId: string }) {
   );
 }
 
-export function VeiculosTab({ workshopId }: { workshopId: string }) {
-  const [vehicles, setVehicles] = useState<WorkshopVehicle[]>([]);
+export function AtivosTab({
+  workshopId,
+  config,
+}: {
+  workshopId: string;
+  config: OperationalConfig;
+}) {
+  const [assets, setAssets] = useState<WorkshopVehicle[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [plate, setPlate] = useState("");
-  const [model, setModel] = useState("");
-  const [year, setYear] = useState("");
+  const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
     const data = await fetchCrm();
-    setVehicles(data.vehicles);
+    setAssets(data.vehicles);
   }, [workshopId]);
 
   useEffect(() => {
@@ -67,26 +72,47 @@ export function VeiculosTab({ workshopId }: { workshopId: string }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    const result = await apiAddVehicle({ plate, model, year: year || undefined });
+    const referenceKey = fields.referenceKey?.trim() ?? "";
+    const label = fields.label?.trim() ?? "";
+    const year = fields.year?.trim();
+
+    if (!referenceKey || !label) {
+      setError("Preencha os campos obrigatórios.");
+      return;
+    }
+
+    const result =
+      config.assets.type === "vehicle"
+        ? await apiAddVehicle({ plate: referenceKey, model: label, year: year || undefined })
+        : await apiAddAsset({
+            referenceKey,
+            label,
+            year: year || undefined,
+            assetType: config.assets.type,
+          });
+
     if (!result.ok) {
       setError(result.error);
       return;
     }
-    setPlate("");
-    setModel("");
-    setYear("");
+    setFields({});
     setShowForm(false);
     await refresh();
   }
+
+  const tableHeaders = config.assets.fields
+    .filter((f) => f.key === "referenceKey" || f.key === "label" || f.key === "year")
+    .map((f) => f.label)
+    .concat(["Histórico (serviços)"]);
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
-          Cadastre placa, modelo e ano. Consulte o histórico de serviços por veículo.
+          Cadastre {config.assets.pluralLabel.toLowerCase()} para vincular a orçamentos e histórico.
         </p>
         <ActionButton
-          label={showForm ? "Cancelar" : "+ Novo veículo"}
+          label={showForm ? "Cancelar" : `+ Novo ${config.assets.singularLabel.toLowerCase()}`}
           variant={showForm ? "secondary" : "primary"}
           onClick={() => {
             setShowForm(!showForm);
@@ -97,55 +123,60 @@ export function VeiculosTab({ workshopId }: { workshopId: string }) {
 
       {showForm && (
         <form onSubmit={handleSubmit} className="card mb-6 space-y-4 p-5">
-          <h3 className="font-semibold">Cadastrar veículo</h3>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <input
-              required
-              value={plate}
-              onChange={(e) => setPlate(e.target.value.toUpperCase())}
-              className="input-field"
-              placeholder="Placa *"
-            />
-            <input
-              required
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className="input-field"
-              placeholder="Modelo *"
-            />
-            <input
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-              className="input-field"
-              placeholder="Ano"
-            />
+          <h3 className="font-semibold">Cadastrar {config.assets.singularLabel.toLowerCase()}</h3>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {config.assets.fields.map((field) => (
+              <input
+                key={field.key}
+                required={field.required}
+                value={fields[field.key] ?? ""}
+                onChange={(e) =>
+                  setFields((prev) => ({
+                    ...prev,
+                    [field.key]: field.key === "referenceKey" ? e.target.value.toUpperCase() : e.target.value,
+                  }))
+                }
+                className="input-field"
+                placeholder={`${field.label}${field.required ? " *" : ""}`}
+              />
+            ))}
           </div>
           {error && <p className="text-sm text-danger">{error}</p>}
           <button type="submit" className="btn btn-primary">
-            Salvar veículo
+            Salvar
           </button>
         </form>
       )}
 
-      {vehicles.length === 0 ? (
-        <p className="text-sm text-muted">Nenhum veículo cadastrado.</p>
+      {assets.length === 0 ? (
+        <p className="text-sm text-muted">Nenhum {config.assets.singularLabel.toLowerCase()} cadastrado.</p>
       ) : (
         <DataTable
-          headers={["Placa", "Modelo", "Ano", "Histórico (serviços)"]}
-          rows={vehicles.map((v) => [
-            v.plate,
-            v.model,
-            v.year ?? "—",
-            (v.completedServices?.length ?? 0) > 0 ? (
-              <span key={`hist-${v.id}`} className="dash-badge">
-                {v.completedServices!.length} serviço{v.completedServices!.length > 1 ? "s" : ""}
-              </span>
-            ) : (
-              <span key={`none-${v.id}`} className="text-xs text-muted">Sem histórico ainda</span>
-            ),
-          ])}
+          headers={tableHeaders}
+          rows={assets.map((v) => {
+            const cells: (string | React.ReactNode)[] = [];
+            for (const field of config.assets.fields) {
+              if (field.key === "referenceKey") cells.push(v.referenceKey || v.plate);
+              else if (field.key === "label") cells.push(v.label || v.model);
+              else if (field.key === "year") cells.push(v.year ?? "—");
+              else if (field.key === "model") cells.push(v.model);
+            }
+            cells.push(
+              (v.completedServices?.length ?? 0) > 0 ? (
+                <span key={`hist-${v.id}`} className="dash-badge">
+                  {v.completedServices!.length} serviço{v.completedServices!.length > 1 ? "s" : ""}
+                </span>
+              ) : (
+                <span key={`none-${v.id}`} className="text-xs text-muted">Sem histórico ainda</span>
+              )
+            );
+            return cells;
+          })}
         />
       )}
     </div>
   );
 }
+
+/** @deprecated Use AtivosTab */
+export const VeiculosTab = AtivosTab;

@@ -30,7 +30,7 @@ async function loginWithDatabase(
 > {
   const dbUser = await prisma.user.findUnique({
     where: { email },
-    include: { workshop: { select: { name: true, blocked: true } } },
+    include: { workshop: { select: { name: true, blocked: true, vertical: true } } },
   });
 
   if (!dbUser || !(await bcrypt.compare(password, dbUser.passwordHash))) {
@@ -41,7 +41,12 @@ async function loginWithDatabase(
     return { status: "blocked" };
   }
 
-  const user = toAuthUser(dbUser, dbUser.workshop?.name ?? null);
+  const user = toAuthUser(
+    dbUser,
+    dbUser.workshop
+      ? { name: dbUser.workshop.name, vertical: dbUser.workshop.vertical as import("@/types/vertical").BusinessVertical }
+      : null
+  );
   const token = await createSession(dbUser.id);
   const expiresAt = newSessionExpiry();
   const response = NextResponse.json({ user });

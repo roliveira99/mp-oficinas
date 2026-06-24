@@ -1,4 +1,6 @@
+import type { BusinessVertical } from "@/types/vertical";
 import type { NavItem, Permission, UserRole } from "@/types/auth";
+import { getOperationalConfig } from "@/lib/verticals/operational";
 
 export const roleLabels: Record<UserRole, string> = {
   master: "Administrador Master",
@@ -166,8 +168,51 @@ export function hasAnyPermission(role: UserRole, permissions: Permission[]): boo
   return permissions.some((p) => hasPermission(role, p));
 }
 
-export function getNavItems(role: UserRole): NavItem[] {
-  return navigationByRole[role] ?? [];
+export function getRoleLabel(role: UserRole, vertical?: BusinessVertical | null): string {
+  if (role === "mecanico") {
+    return getOperationalConfig(vertical).roles.operator;
+  }
+  return roleLabels[role];
+}
+
+function applyVerticalNavLabels(items: NavItem[], vertical?: BusinessVertical | null): NavItem[] {
+  const ops = getOperationalConfig(vertical);
+  return items.map((item) => {
+    if (item.href === "/dashboard/cadastros" && item.label.includes("Veículos")) {
+      return { ...item, label: ops.assets.tabLabel };
+    }
+    if (item.href === "/dashboard/equipe-ficticia") {
+      return { ...item, label: ops.roles.teamWithoutLogin };
+    }
+    if (item.href === "/dashboard/mecanico/orcamentos" || item.href.startsWith("/dashboard/mecanico")) {
+      if (item.label === "Meu painel") {
+        return { ...item, label: `Meu painel (${ops.roles.operator})` };
+      }
+    }
+    if (item.href === "/dashboard/estoque" && ops.catalog.partsLabel !== "Peças") {
+      return item;
+    }
+    return item;
+  });
+}
+
+export function getNavItems(role: UserRole, vertical?: BusinessVertical | null): NavItem[] {
+  const items = navigationByRole[role] ?? [];
+  if (role === "gerencia") {
+    const ops = getOperationalConfig(vertical);
+    return applyVerticalNavLabels(
+      items.map((item) =>
+        item.href === "/dashboard/cadastros"
+          ? { ...item, label: `${ops.assets.pluralLabel} e clientes` }
+          : item
+      ),
+      vertical
+    );
+  }
+  if (role === "dono" || role === "mecanico") {
+    return applyVerticalNavLabels(items, vertical);
+  }
+  return items;
 }
 
 export function canAccessRoute(role: UserRole, pathname: string): boolean {

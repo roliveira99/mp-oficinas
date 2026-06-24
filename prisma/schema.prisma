@@ -21,6 +21,14 @@ enum WorkshopType {
   estetica
 }
 
+enum BusinessAssetType {
+  vehicle
+  generic
+  pet
+  property
+  order
+}
+
 enum BusinessVertical {
   automotive
   beauty
@@ -200,17 +208,20 @@ model CrmClient {
 }
 
 model CrmVehicle {
-  id                String    @id
+  id                String            @id
   workshopId        String
-  workshop          Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  workshop          Workshop          @relation(fields: [workshopId], references: [id], onDelete: Cascade)
   clientId          String?
-  client            CrmClient? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  client            CrmClient?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  assetType         BusinessAssetType @default(vehicle)
+  referenceKey      String
+  label             String
   plate             String
   model             String
   year              String?
-  completedServices Json      @default("[]")
+  completedServices Json              @default("[]")
 
-  @@unique([workshopId, plate])
+  @@unique([workshopId, referenceKey])
   @@index([workshopId])
   @@index([clientId])
 }
@@ -423,7 +434,7 @@ model WorkshopBudget {
   id             String       @id @default(cuid())
   workshopId     String
   workshop       Workshop     @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  vehicleId      String
+  vehicleId      String?
   clientId       String?
   status         BudgetStatus @default(rascunho)
   lineItems      Json
@@ -449,7 +460,7 @@ model ServiceNote {
   id               String            @id @default(cuid())
   workshopId       String
   workshop         Workshop          @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  vehicleId        String
+  vehicleId        String?
   clientId         String?
   budgetId         String?
   status           ServiceNoteStatus @default(emitida)

@@ -157,16 +157,40 @@ async function main() {
   const workshopId = "1";
 
   const seedVehicles = [
-    { id: "veh-1-civic", clientId: "cli-1-11144477735", plate: "ABC1D23", model: "Honda Civic 2020" },
-    { id: "veh-1-corolla", clientId: "cli-1-39053344705", plate: "DEF4G56", model: "Toyota Corolla 2019" },
-    { id: "veh-1-gol", clientId: "cli-1-52998224725", plate: "GHI7J89", model: "VW Gol 2018" },
+    {
+      id: "veh-1-civic",
+      clientId: "cli-1-11144477735",
+      plate: "ABC1D23",
+      referenceKey: "ABC1D23",
+      label: "Honda Civic 2020",
+      model: "Honda Civic 2020",
+      assetType: "vehicle" as const,
+    },
+    {
+      id: "veh-1-corolla",
+      clientId: "cli-1-39053344705",
+      plate: "DEF4G56",
+      referenceKey: "DEF4G56",
+      label: "Toyota Corolla 2019",
+      model: "Toyota Corolla 2019",
+      assetType: "vehicle" as const,
+    },
+    {
+      id: "veh-1-gol",
+      clientId: "cli-1-52998224725",
+      plate: "GHI7J89",
+      referenceKey: "GHI7J89",
+      label: "VW Gol 2018",
+      model: "VW Gol 2018",
+      assetType: "vehicle" as const,
+    },
   ];
 
   for (const v of seedVehicles) {
     await prisma.crmVehicle.upsert({
-      where: { workshopId_plate: { workshopId, plate: v.plate } },
+      where: { workshopId_referenceKey: { workshopId, referenceKey: v.referenceKey } },
       create: { ...v, workshopId },
-      update: { model: v.model, clientId: v.clientId },
+      update: { model: v.model, label: v.label, clientId: v.clientId, plate: v.plate },
     });
   }
 

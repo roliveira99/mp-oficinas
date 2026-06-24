@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/oficinas", destination: "/negocios", permanent: true },
       { source: "/oficinas/:slug", destination: "/negocios/:slug", permanent: true },
+      { source: "/dashboard/operador", destination: "/dashboard/mecanico", permanent: false },
+      { source: "/dashboard/operador/:path*", destination: "/dashboard/mecanico/:path*", permanent: false },
     ];
   },
 };

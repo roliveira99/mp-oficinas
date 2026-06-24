@@ -18,6 +18,7 @@ import {
   shareViaWhatsApp,
 } from "@/lib/document-share";
 import { fetchCrm } from "@/lib/api/crm-client";
+import { getOperationalConfig } from "@/lib/verticals/operational";
 import type { BudgetRecord } from "@/types/budget";
 import type { MechanicAssignee, MechanicKind, WorkshopVehicle } from "@/types/client";
 import type { DocumentLineItem } from "@/types/document-line";
@@ -37,6 +38,7 @@ export default function OrcamentosPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const canApprove = user?.role === "dono" || user?.role === "gerencia";
+  const ops = getOperationalConfig(user?.workshopVertical);
 
   const refresh = useCallback(async () => {
     const [budgetRes, crm] = await Promise.all([
@@ -67,7 +69,7 @@ export default function OrcamentosPage() {
 
   function startEdit(b: BudgetRecord) {
     setEditingId(b.id);
-    setVehicleId(b.vehicleId);
+    setVehicleId(b.vehicleId ?? "");
     setLineItems(b.lineItems);
     setPaymentMethods(b.paymentMethods);
     setMechanicId(b.mechanicId ?? "");
@@ -80,8 +82,8 @@ export default function OrcamentosPage() {
     setError("");
     setMessage("");
 
-    if (!vehicleId) {
-      setError("Selecione o veículo.");
+    if (ops.assets.requiredForBudget && !vehicleId) {
+      setError(`Selecione ${ops.assets.singularLabel.toLowerCase()}.`);
       return;
     }
     if (lineItems.length === 0) {
@@ -95,7 +97,7 @@ export default function OrcamentosPage() {
 
     const assignee = assignees.find((a) => a.id === mechanicId && a.kind === mechanicKind);
     const payload = {
-      vehicleId,
+      vehicleId: vehicleId || null,
       lineItems,
       paymentMethods,
       mechanicId,
@@ -188,19 +190,25 @@ export default function OrcamentosPage() {
         <form onSubmit={handleSubmit} className="card mb-6 space-y-4 p-5">
           <h3 className="font-semibold">{editingId ? "Editar orçamento" : "Novo orçamento"}</h3>
           <div className="grid gap-3 sm:grid-cols-2">
-            <select
-              required
-              value={vehicleId}
-              onChange={(e) => setVehicleId(e.target.value)}
-              className="input-field"
-            >
-              <option value="">Veículo (placa) *</option>
-              {vehicles.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.plate} — {v.model}{v.year ? ` (${v.year})` : ""}
+            {ops.assets.enabled && (
+              <select
+                required={ops.assets.requiredForBudget}
+                value={vehicleId}
+                onChange={(e) => setVehicleId(e.target.value)}
+                className="input-field"
+              >
+                <option value="">
+                  {ops.assets.singularLabel}
+                  {ops.assets.requiredForBudget ? " *" : " (opcional)"}
                 </option>
-              ))}
-            </select>
+                {vehicles.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.referenceKey || v.plate} — {v.label || v.model}
+                    {v.year ? ` (${v.year})` : ""}
+                  </option>
+                ))}
+              </select>
+            )}
             <MechanicAssigneeSelect
               assignees={assignees}
               value={mechanicId}
@@ -229,7 +237,7 @@ export default function OrcamentosPage() {
       )}
 
       <DataTable
-        headers={["ID", "Veículo", "Responsável", "Total", "Status", "Enviado", "Ações"]}
+        headers={["ID", ops.assets.singularLabel, "Responsável", "Total", "Status", "Enviado", "Ações"]}
         rows={visible.map((b) => [
           b.id.slice(-8).toUpperCase(),
           b.vehiclePlate ? `${b.vehiclePlate} — ${b.vehicleModel ?? ""}` : "—",

@@ -6,6 +6,7 @@ import { DocumentLineBuilder } from "@/components/dashboard/DocumentLineBuilder"
 import { PermissionGuard } from "@/components/dashboard/PermissionGuard";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { fetchCrm } from "@/lib/api/crm-client";
+import { getOperationalConfig } from "@/lib/verticals/operational";
 import { budgetStatusColors, budgetStatusLabels } from "@/lib/labels";
 import type { BudgetRecord } from "@/types/budget";
 import type { DocumentLineItem } from "@/types/document-line";
@@ -22,6 +23,7 @@ export default function MecanicoOrcamentosPage() {
   const [notes, setNotes] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const ops = getOperationalConfig(user?.workshopVertical);
 
   const refresh = useCallback(async () => {
     const [budgetRes, crm] = await Promise.all([fetch("/api/budgets"), fetchCrm()]);
@@ -39,8 +41,12 @@ export default function MecanicoOrcamentosPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!vehicleId || lineItems.length === 0) {
-      setError("Selecione o veículo e adicione itens.");
+    if ((ops.assets.requiredForBudget && !vehicleId) || lineItems.length === 0) {
+      setError(
+        ops.assets.requiredForBudget
+          ? `Selecione ${ops.assets.singularLabel.toLowerCase()} e adicione itens.`
+          : "Adicione itens ao orçamento."
+      );
       return;
     }
 
@@ -49,7 +55,7 @@ export default function MecanicoOrcamentosPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "create",
-        vehicleId,
+        vehicleId: vehicleId || null,
         lineItems,
         paymentMethods,
         mechanicId: user?.id,
@@ -86,12 +92,24 @@ export default function MecanicoOrcamentosPage() {
 
       {showForm && (
         <form onSubmit={handleSubmit} className="card mb-6 space-y-4 p-5">
-          <select required value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} className="input-field max-w-md">
-            <option value="">Veículo (placa) *</option>
-            {vehicles.map((v) => (
-              <option key={v.id} value={v.id}>{v.plate} — {v.model}</option>
-            ))}
-          </select>
+          {ops.assets.enabled && (
+            <select
+              required={ops.assets.requiredForBudget}
+              value={vehicleId}
+              onChange={(e) => setVehicleId(e.target.value)}
+              className="input-field max-w-md"
+            >
+              <option value="">
+                {ops.assets.singularLabel}
+                {ops.assets.requiredForBudget ? " *" : " (opcional)"}
+              </option>
+              {vehicles.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.referenceKey || v.plate} — {v.label || v.model}
+                </option>
+              ))}
+            </select>
+          )}
           <DocumentLineBuilder lineItems={lineItems} onChange={setLineItems} paymentMethods={paymentMethods} onPaymentMethodsChange={setPaymentMethods} />
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="input-field min-h-[60px]" placeholder="Observações para a gerência (opcional)" />
           {error && <p className="text-sm text-danger">{error}</p>}
@@ -100,7 +118,7 @@ export default function MecanicoOrcamentosPage() {
       )}
 
       <DataTable
-        headers={["ID", "Veículo", "Total", "Status", "Data"]}
+        headers={["ID", ops.assets.singularLabel, "Total", "Status", "Data"]}
         rows={budgets.map((b) => [
           b.id.slice(-8).toUpperCase(),
           b.vehiclePlate ?? "—",

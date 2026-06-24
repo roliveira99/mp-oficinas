@@ -1,3 +1,4 @@
+import { getOperationalConfig } from "@/lib/verticals/operational";
 import { prisma } from "@/lib/db/prisma";
 import type { DocumentLineItem } from "@/types/document-line";
 import type { ServiceNoteRecord } from "@/types/service-note";
@@ -8,7 +9,7 @@ export type { ServiceNoteRecord };
 function mapNote(row: {
   id: string;
   workshopId: string;
-  vehicleId: string;
+  vehicleId: string | null;
   clientId: string | null;
   budgetId: string | null;
   status: string;
@@ -105,21 +106,24 @@ export async function listServiceNotes(
     orderBy: { issuedAt: "desc" },
   });
 
-  const vehicles = await prisma.crmVehicle.findMany({
-    where: { workshopId, id: { in: rows.map((r) => r.vehicleId) } },
-  });
+  const vehicleIds = rows.map((r) => r.vehicleId).filter(Boolean) as string[];
+  const vehicles = vehicleIds.length
+    ? await prisma.crmVehicle.findMany({
+        where: { workshopId, id: { in: vehicleIds } },
+      })
+    : [];
   const clients = await prisma.crmClient.findMany({
     where: { workshopId, id: { in: rows.map((r) => r.clientId).filter(Boolean) as string[] } },
   });
 
   return rows.map((row) => {
     const note = mapNote(row);
-    const vehicle = vehicles.find((v) => v.id === row.vehicleId);
+    const vehicle = row.vehicleId ? vehicles.find((v) => v.id === row.vehicleId) : undefined;
     const client = clients.find((c) => c.id === row.clientId);
     return {
       ...note,
-      vehiclePlate: vehicle?.plate,
-      vehicleModel: vehicle?.model,
+      vehiclePlate: vehicle?.referenceKey ?? vehicle?.plate,
+      vehicleModel: vehicle?.label ?? vehicle?.model,
       clientName: client?.name,
     };
   });
@@ -128,7 +132,7 @@ export async function listServiceNotes(
 export async function createServiceNote(
   workshopId: string,
   input: {
-    vehicleId: string;
+    vehicleId?: string | null;
     lineItems: DocumentLineItem[];
     paymentMethods?: string[];
     mechanicId: string;
@@ -138,10 +142,25 @@ export async function createServiceNote(
     clientId?: string;
   }
 ): Promise<{ ok: true; note: ServiceNoteRecord } | { ok: false; error: string }> {
-  const vehicle = await prisma.crmVehicle.findFirst({
-    where: { id: input.vehicleId, workshopId },
+  const workshop = await prisma.workshop.findUnique({
+    where: { id: workshopId },
+    select: { vertical: true },
   });
-  if (!vehicle) return { ok: false, error: "Veículo não encontrado." };
+  const ops = getOperationalConfig(workshop?.vertical);
+
+  if (ops.assets.requiredForBudget && !input.vehicleId) {
+    return { ok: false, error: `Selecione um ${ops.assets.singularLabel.toLowerCase()}.` };
+  }
+
+  let vehicleClientId: string | null = null;
+  if (input.vehicleId) {
+    const vehicle = await prisma.crmVehicle.findFirst({
+      where: { id: input.vehicleId, workshopId },
+    });
+    if (!vehicle) return { ok: false, error: `${ops.assets.singularLabel} não encontrado.` };
+    vehicleClientId = vehicle.clientId;
+  }
+
   if (input.lineItems.length === 0) return { ok: false, error: "Adicione itens à nota." };
 
   const subtotal = input.lineItems.reduce((s, l) => s + l.total, 0);
@@ -157,8 +176,8 @@ export async function createServiceNote(
     const created = await tx.serviceNote.create({
       data: {
         workshopId,
-        vehicleId: input.vehicleId,
-        clientId: input.clientId ?? vehicle.clientId,
+        vehicleId: input.vehicleId ?? null,
+        clientId: input.clientId ?? vehicleClientId,
         budgetId: input.orderId ?? null,
         status: "emitida",
         lineItems: input.lineItems as object,
@@ -256,8 +275,17 @@ export async function createServiceNoteFromOrder(
   if (order.status !== "em_andamento" && order.status !== "pendente") {
     return { ok: false, error: "Só é possível emitir nota de orçamentos aprovados ou em andamento." };
   }
-  if (!order.vehicleId || !order.mechanicId || !order.mechanicKind) {
-    return { ok: false, error: "Orçamento incompleto (veículo ou mecânico)." };
+  if (!order.mechanicId || !order.mechanicKind) {
+    return { ok: false, error: "Orçamento incompleto (mecânico)." };
+  }
+
+  const workshop = await prisma.workshop.findUnique({
+    where: { id: workshopId },
+    select: { vertical: true },
+  });
+  const ops = getOperationalConfig(workshop?.vertical);
+  if (ops.assets.requiredForBudget && !order.vehicleId) {
+    return { ok: false, error: `Orçamento incompleto (${ops.assets.singularLabel.toLowerCase()}).` };
   }
 
   const storedLines = order.lineItems as unknown as DocumentLineItem[] | null;

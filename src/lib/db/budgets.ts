@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { getOperationalConfig } from "@/lib/verticals/operational";
 import type { BudgetStatus, MechanicKind } from "@prisma/client";
 import type { BudgetRecord } from "@/types/budget";
 import type { DocumentLineItem } from "@/types/document-line";
@@ -8,7 +9,7 @@ export type { BudgetRecord };
 function mapBudget(row: {
   id: string;
   workshopId: string;
-  vehicleId: string;
+  vehicleId: string | null;
   status: BudgetStatus;
   lineItems: unknown;
   paymentMethods: unknown;
@@ -54,21 +55,28 @@ export async function listBudgets(
     where: { workshopId, ...(statuses ? { status: { in: statuses } } : {}) },
     orderBy: { createdAt: "desc" },
   });
-  const vehicleIds = rows.map((r) => r.vehicleId);
-  const vehicles = await prisma.crmVehicle.findMany({
-    where: { workshopId, id: { in: vehicleIds } },
-  });
+  const vehicleIds = rows.map((r) => r.vehicleId).filter(Boolean) as string[];
+  const vehicles = vehicleIds.length
+    ? await prisma.crmVehicle.findMany({
+        where: { workshopId, id: { in: vehicleIds } },
+      })
+    : [];
   return rows.map((row) => {
     const b = mapBudget(row);
-    const v = vehicles.find((x) => x.id === row.vehicleId);
-    return { ...b, vehiclePlate: v?.plate, vehicleModel: v?.model, vehicleYear: v?.year ?? undefined };
+    const v = row.vehicleId ? vehicles.find((x) => x.id === row.vehicleId) : undefined;
+    return {
+      ...b,
+      vehiclePlate: v?.referenceKey ?? v?.plate,
+      vehicleModel: v?.label ?? v?.model,
+      vehicleYear: v?.year ?? undefined,
+    };
   });
 }
 
 export async function createBudget(
   workshopId: string,
   input: {
-    vehicleId: string;
+    vehicleId?: string | null;
     lineItems: DocumentLineItem[];
     paymentMethods?: string[];
     mechanicId?: string;
@@ -79,15 +87,28 @@ export async function createBudget(
     status?: BudgetStatus;
   }
 ): Promise<{ ok: true; budget: BudgetRecord } | { ok: false; error: string }> {
-  const vehicle = await prisma.crmVehicle.findFirst({ where: { id: input.vehicleId, workshopId } });
-  if (!vehicle) return { ok: false, error: "Veículo não encontrado." };
+  const workshop = await prisma.workshop.findUnique({
+    where: { id: workshopId },
+    select: { vertical: true },
+  });
+  const ops = getOperationalConfig(workshop?.vertical);
+
+  if (ops.assets.requiredForBudget && !input.vehicleId) {
+    return { ok: false, error: `Selecione um ${ops.assets.singularLabel.toLowerCase()}.` };
+  }
+
+  if (input.vehicleId) {
+    const vehicle = await prisma.crmVehicle.findFirst({ where: { id: input.vehicleId, workshopId } });
+    if (!vehicle) return { ok: false, error: `${ops.assets.singularLabel} não encontrado.` };
+  }
+
   if (input.lineItems.length === 0) return { ok: false, error: "Adicione itens ao orçamento." };
 
   const subtotal = input.lineItems.reduce((s, l) => s + l.total, 0);
   const row = await prisma.workshopBudget.create({
     data: {
       workshopId,
-      vehicleId: input.vehicleId,
+      vehicleId: input.vehicleId ?? null,
       status: input.status ?? "aguardando_aprovacao",
       lineItems: input.lineItems as object,
       paymentMethods: (input.paymentMethods ?? []) as object,

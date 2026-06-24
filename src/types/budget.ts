@@ -11,7 +11,7 @@ export type BudgetStatus =
 export interface BudgetRecord {
   id: string;
   workshopId: string;
-  vehicleId: string;
+  vehicleId: string | null;
   status: BudgetStatus;
   lineItems: DocumentLineItem[];
   paymentMethods: string[];

@@ -51,6 +51,18 @@ export async function apiLinkVehicle(vehicleId: string, clientId: string) {
   >;
 }
 
+export async function apiAddAsset(input: {
+  referenceKey: string;
+  label: string;
+  assetType?: import("@/types/client").BusinessAssetType;
+  year?: string;
+  clientId?: string;
+}) {
+  return crmPost({ action: "add-asset", ...input }) as Promise<
+    { ok: true; vehicle: WorkshopVehicle } | { ok: false; error: string }
+  >;
+}
+
 export async function apiAddVehicle(input: { plate: string; model: string; year?: string; clientId?: string }) {
   return crmPost({ action: "add-vehicle", ...input }) as Promise<
     { ok: true; vehicle: WorkshopVehicle } | { ok: false; error: string }
@@ -58,7 +70,7 @@ export async function apiAddVehicle(input: { plate: string; model: string; year?
 }
 
 export async function apiCreateOrder(input: {
-  vehicleId: string;
+  vehicleId?: string;
   service: string;
   value: number;
   mechanicId: string;

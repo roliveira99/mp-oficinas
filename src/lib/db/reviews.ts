@@ -1,6 +1,7 @@
 import { seedReviews, verifiedClientsByWorkshop } from "@/data/verified-clients";
 import { normalizeCpf } from "@/lib/cpf";
 import { isDatabaseReachable, prisma } from "@/lib/db/prisma";
+import { getOperationalConfig } from "@/lib/verticals/operational";
 import type { Prisma } from "@prisma/client";
 import type { CompletedServiceRecord, ReviewStats, StarRating, VerifiedClient, WorkshopReview } from "@/types/review";
 
@@ -89,16 +90,26 @@ export type VerifyReviewResult =
 export async function verifyReviewEligibility(input: {
   workshopId: string;
   cpf: string;
-  plate: string;
+  plate?: string;
   name?: string;
   phone?: string;
   birthDate?: string;
 }): Promise<VerifyReviewResult> {
   const cpf = normalizeCpf(input.cpf);
-  const plate = normalizePlate(input.plate);
+  const plate = input.plate ? normalizePlate(input.plate) : "";
 
-  if (!cpf || plate.length < 7) {
-    return { status: "not_eligible", error: "Informe CPF e placa válidos." };
+  const workshop = await prisma.workshop.findUnique({
+    where: { id: input.workshopId },
+    select: { vertical: true },
+  });
+  const ops = getOperationalConfig(workshop?.vertical);
+
+  if (!cpf) {
+    return { status: "not_eligible", error: "Informe um CPF válido." };
+  }
+
+  if (ops.reviews.requireAssetReference && plate.length < 3) {
+    return { status: "not_eligible", error: `Informe CPF e ${ops.reviews.assetReferenceLabel.toLowerCase()} válidos.` };
   }
 
   if (!(await isDatabaseReachable())) {
@@ -109,7 +120,9 @@ export async function verifyReviewEligibility(input: {
     }
     return {
       status: "not_eligible",
-      error: "Não encontramos serviço concluído para este CPF e placa.",
+      error: ops.reviews.requireAssetReference
+        ? "Não encontramos serviço concluído para este CPF e referência."
+        : "Não encontramos serviço concluído para este CPF.",
     };
   }
 
@@ -120,14 +133,54 @@ export async function verifyReviewEligibility(input: {
     return { status: "ready", client, existingReview };
   }
 
+  if (!ops.reviews.requireAssetReference) {
+    const clientByCpf = await prisma.crmClient.findUnique({
+      where: { workshopId_cpf: { workshopId: input.workshopId, cpf } },
+    });
+    const services = (clientByCpf?.completedServices ?? []) as unknown as CompletedServiceRecord[];
+    if (services.length === 0) {
+      return {
+        status: "not_eligible",
+        error: "Ainda não há serviço concluído vinculado a este CPF neste negócio.",
+      };
+    }
+    if (!input.name?.trim()) {
+      return { status: "needs_registration" };
+    }
+    if (!input.birthDate?.trim()) {
+      return { status: "not_eligible", error: "Informe sua data de nascimento para concluir o cadastro." };
+    }
+    const birthDate = new Date(input.birthDate);
+    if (Number.isNaN(birthDate.getTime())) {
+      return { status: "not_eligible", error: "Data de nascimento inválida." };
+    }
+    const updated = await prisma.crmClient.update({
+      where: { workshopId_cpf: { workshopId: input.workshopId, cpf } },
+      data: {
+        name: input.name.trim(),
+        phone: input.phone?.trim() ?? undefined,
+        birthDate,
+      },
+    });
+    client = {
+      cpf: updated.cpf,
+      name: updated.name,
+      completedServices: services,
+    };
+    return { status: "ready", client, existingReview };
+  }
+
   const vehicle = await prisma.crmVehicle.findFirst({
-    where: { workshopId: input.workshopId, plate },
+    where: {
+      workshopId: input.workshopId,
+      OR: [{ referenceKey: plate }, { plate }],
+    },
   });
 
   if (!vehicle) {
     return {
       status: "not_eligible",
-      error: "Placa não encontrada nesta oficina. Confira a placa do veículo atendido.",
+      error: `${ops.reviews.assetReferenceLabel} não encontrada neste negócio. Confira a referência do atendimento.`,
     };
   }
 

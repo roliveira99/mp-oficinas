@@ -22,7 +22,7 @@ export function DashboardSidebar({
 
   if (!user) return null;
 
-  const navItems = getNavItems(user.role);
+  const navItems = getNavItems(user.role, user.workshopVertical);
   if (navItems.length === 0) return null;
 
   const grouped = navItems.reduce<Record<string, typeof navItems>>((acc, item) => {
@@ -60,7 +60,7 @@ export function DashboardSidebar({
           <p className="mt-0.5 truncate text-xs text-[var(--dash-sidebar-text)]">{user.workshopName}</p>
         )}
         <div className="mt-2">
-          <RoleBadge role={user.role} />
+          <RoleBadge role={user.role} vertical={user.workshopVertical} />
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import { normalizeCpf } from "@/lib/cpf";
 import { isDatabaseReachable, prisma } from "@/lib/db/prisma";
 import type { Prisma } from "@prisma/client";
 import type {
+  BusinessAssetType,
   FictionalMechanic,
   MechanicAssignee,
   MechanicKind,
@@ -13,6 +14,8 @@ import type {
   WorkshopServiceOrder,
   WorkshopVehicle,
 } from "@/types/client";
+import { getOperationalConfig, formatAssetLabel } from "@/lib/verticals/operational";
+
 import type { CompletedServiceRecord } from "@/types/review";
 
 function clientId(workshopId: string, cpf: string) {
@@ -39,21 +42,33 @@ function mapClient(row: {
   };
 }
 
+function normalizeReferenceKey(key: string) {
+  return key.trim().toUpperCase().replace(/\s+/g, "");
+}
+
 function mapVehicle(row: {
   id: string;
   workshopId: string;
   clientId: string | null;
+  assetType?: BusinessAssetType | null;
+  referenceKey?: string | null;
+  label?: string | null;
   plate: string;
   model: string;
   year?: string | null;
   completedServices?: unknown;
 }): WorkshopVehicle {
+  const referenceKey = row.referenceKey || row.plate;
+  const label = row.label || row.model;
   return {
     id: row.id,
     workshopId: row.workshopId,
     clientId: row.clientId,
-    plate: row.plate,
-    model: row.model,
+    assetType: (row.assetType ?? "vehicle") as BusinessAssetType,
+    referenceKey,
+    label,
+    plate: row.plate || referenceKey,
+    model: row.model || label,
     year: row.year ?? undefined,
     completedServices: (row.completedServices ?? []) as CompletedServiceRecord[],
   };
@@ -196,21 +211,31 @@ export async function addClient(
   return { ok: true, client: mapClient(row) };
 }
 
-export async function addVehicle(
+export async function addAsset(
   workshopId: string,
-  input: { plate: string; model: string; year?: string; clientId?: string }
+  input: {
+    referenceKey: string;
+    label: string;
+    assetType?: BusinessAssetType;
+    model?: string;
+    year?: string;
+    clientId?: string;
+  }
 ): Promise<{ ok: true; vehicle: WorkshopVehicle } | { ok: false; error: string }> {
-  const plate = input.plate.trim().toUpperCase();
-  const model = input.model.trim();
+  const referenceKey = normalizeReferenceKey(input.referenceKey);
+  const label = input.label.trim();
+  const model = (input.model ?? label).trim();
   const year = input.year?.trim() || null;
-  if (!plate || !model) {
-    return { ok: false, error: "Informe placa e modelo do veículo." };
+  const assetType = input.assetType ?? "generic";
+
+  if (!referenceKey || !label) {
+    return { ok: false, error: "Informe referência e descrição." };
   }
 
   const dup = await prisma.crmVehicle.findUnique({
-    where: { workshopId_plate: { workshopId, plate } },
+    where: { workshopId_referenceKey: { workshopId, referenceKey } },
   });
-  if (dup) return { ok: false, error: "Já existe um veículo com esta placa." };
+  if (dup) return { ok: false, error: "Já existe um registro com esta referência." };
 
   if (input.clientId) {
     const client = await prisma.crmClient.findFirst({
@@ -219,11 +244,15 @@ export async function addVehicle(
     if (!client) return { ok: false, error: "Cliente informado não encontrado." };
   }
 
+  const plate = assetType === "vehicle" ? referenceKey : referenceKey.slice(0, 12);
   const row = await prisma.crmVehicle.create({
     data: {
       id: `veh-${Date.now()}`,
       workshopId,
       clientId: input.clientId ?? null,
+      assetType,
+      referenceKey,
+      label,
       plate,
       model,
       year,
@@ -231,6 +260,26 @@ export async function addVehicle(
     },
   });
   return { ok: true, vehicle: mapVehicle(row) };
+}
+
+export async function addVehicle(
+  workshopId: string,
+  input: { plate: string; model: string; year?: string; clientId?: string }
+): Promise<{ ok: true; vehicle: WorkshopVehicle } | { ok: false; error: string }> {
+  const plate = normalizeReferenceKey(input.plate);
+  const model = input.model.trim();
+  if (!plate || !model) {
+    return { ok: false, error: "Informe placa e modelo do veículo." };
+  }
+
+  return addAsset(workshopId, {
+    referenceKey: plate,
+    label: model,
+    model,
+    year: input.year,
+    clientId: input.clientId,
+    assetType: "vehicle",
+  });
 }
 
 export async function linkVehicleToClient(
@@ -269,7 +318,7 @@ export async function unlinkVehicleFromClient(
 export async function createOrder(
   workshopId: string,
   input: {
-    vehicleId: string;
+    vehicleId?: string;
     service: string;
     value: number;
     mechanicId: string;
@@ -280,10 +329,23 @@ export async function createOrder(
     paymentMethods?: string[];
   }
 ): Promise<{ ok: true; order: WorkshopServiceOrder } | { ok: false; error: string }> {
-  const vehicle = await prisma.crmVehicle.findFirst({
-    where: { id: input.vehicleId, workshopId },
+  const workshop = await prisma.workshop.findUnique({
+    where: { id: workshopId },
+    select: { vertical: true },
   });
-  if (!vehicle) return { ok: false, error: "Veículo não encontrado. Cadastre a placa antes do orçamento." };
+  const ops = getOperationalConfig(workshop?.vertical);
+
+  let vehicle: Awaited<ReturnType<typeof prisma.crmVehicle.findFirst>> = null;
+  if (input.vehicleId) {
+    vehicle = await prisma.crmVehicle.findFirst({
+      where: { id: input.vehicleId, workshopId },
+    });
+    if (!vehicle) {
+      return { ok: false, error: `${ops.assets.singularLabel} não encontrado. Cadastre antes do orçamento.` };
+    }
+  } else if (ops.assets.requiredForBudget) {
+    return { ok: false, error: `Selecione um ${ops.assets.singularLabel.toLowerCase()} para o orçamento.` };
+  }
 
   const assignee = await resolveAssignee(workshopId, input.mechanicId, input.mechanicKind);
   if (!assignee) return { ok: false, error: "Selecione quem executará o serviço." };
@@ -297,7 +359,7 @@ export async function createOrder(
 
   let client = input.clientId
     ? await prisma.crmClient.findFirst({ where: { id: input.clientId, workshopId } })
-    : vehicle.clientId
+    : vehicle?.clientId
       ? await prisma.crmClient.findFirst({ where: { id: vehicle.clientId, workshopId } })
       : null;
 
@@ -305,16 +367,17 @@ export async function createOrder(
     return { ok: false, error: "Cliente informado não encontrado." };
   }
 
+  const vehicleLabel = vehicle ? formatAssetLabel(mapVehicle(vehicle)) : "";
   const row = await prisma.crmServiceOrder.create({
     data: {
       id: `OS-${Date.now().toString().slice(-6)}`,
       workshopId,
       clientId: client?.id ?? null,
-      vehicleId: vehicle.id,
+      vehicleId: vehicle?.id ?? null,
       clientName: client?.name ?? "",
       clientCpf: client?.cpf ?? "",
-      vehicle: vehicle.model,
-      vehiclePlate: vehicle.plate,
+      vehicle: vehicleLabel,
+      vehiclePlate: vehicle?.referenceKey ?? vehicle?.plate ?? null,
       service: input.service.trim(),
       status: input.status ?? "pendente",
       date: new Date().toISOString().split("T")[0],
@@ -352,12 +415,24 @@ export async function completeOrder(
     ? await prisma.crmVehicle.findFirst({ where: { id: order.vehicleId, workshopId } })
     : order.vehiclePlate
       ? await prisma.crmVehicle.findFirst({
-          where: { workshopId, plate: order.vehiclePlate },
+          where: {
+            workshopId,
+            OR: [{ referenceKey: order.vehiclePlate }, { plate: order.vehiclePlate }],
+          },
         })
       : null;
 
   if (!client && !vehicle) {
-    return { ok: false, error: "Veículo da ordem não encontrado no cadastro." };
+    if (order.clientName || order.clientCpf) {
+      const [updatedOrder] = await prisma.$transaction([
+        prisma.crmServiceOrder.update({
+          where: { id: orderId },
+          data: { status: "concluido" },
+        }),
+      ]);
+      return { ok: true, order: mapOrder(updatedOrder) };
+    }
+    return { ok: false, error: "Registro da ordem não encontrado no cadastro." };
   }
 
   if (client) {

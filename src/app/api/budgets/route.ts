@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   switch (action) {
     case "create": {
       const result = await createBudget(workshopId, {
-        vehicleId: body.vehicleId as string,
+        vehicleId: (body.vehicleId as string | null | undefined) ?? null,
         lineItems: body.lineItems as DocumentLineItem[],
         paymentMethods: body.paymentMethods as string[] | undefined,
         mechanicId: body.mechanicId as string | undefined,

@@ -65,9 +65,9 @@ function seedCrmForWorkshop(workshopId: string): WorkshopCrmData {
 
   if (workshopId === "1") {
     vehicles.push(
-      { id: "veh-1", workshopId, clientId: "cli-11144477735", plate: "ABC-1D23", model: "Honda Civic 2020" },
-      { id: "veh-2", workshopId, clientId: "cli-39053344705", plate: "DEF-4G56", model: "Toyota Corolla 2019" },
-      { id: "veh-3", workshopId, clientId: "cli-52998224725", plate: "GHI-7J89", model: "VW Gol 2018" }
+      { id: "veh-1", workshopId, clientId: "cli-11144477735", assetType: "vehicle", referenceKey: "ABC1D23", label: "Honda Civic 2020", plate: "ABC-1D23", model: "Honda Civic 2020" },
+      { id: "veh-2", workshopId, clientId: "cli-39053344705", assetType: "vehicle", referenceKey: "DEF4G56", label: "Toyota Corolla 2019", plate: "DEF-4G56", model: "Toyota Corolla 2019" },
+      { id: "veh-3", workshopId, clientId: "cli-52998224725", assetType: "vehicle", referenceKey: "GHI7J89", label: "VW Gol 2018", plate: "GHI-7J89", model: "VW Gol 2018" }
     );
     orders.push(
       {
@@ -432,6 +432,9 @@ export function addVehicle(
     id: `veh-${Date.now()}`,
     workshopId,
     clientId: input.clientId,
+    assetType: "vehicle",
+    referenceKey: plate.replace(/[^A-Z0-9]/g, ""),
+    label: input.model.trim(),
     plate,
     model: input.model.trim(),
   };
