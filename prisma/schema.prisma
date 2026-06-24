@@ -337,6 +337,7 @@ model WorkshopSubscription {
 
 model SiteArticle {
   id        String   @id @default(cuid())
+  slug      String?  @unique
   title     String
   summary   String
   content   String

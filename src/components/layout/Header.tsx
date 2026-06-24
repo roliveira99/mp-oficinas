@@ -17,7 +17,7 @@ const navLinks = [
   { href: "/", label: "Início" },
   { href: terms.directoryPath, label: terms.directoryNav },
   { href: "/classificados", label: "Classificados" },
-  { href: "/curiosidades", label: "Notícias" },
+  { href: "/curiosidades", label: "Jornal" },
 ];
 
 export function Header() {

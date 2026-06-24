@@ -1,7 +1,7 @@
 import { APP_NAME } from "@/lib/brand";
 import { getPlatformTerminology } from "@/lib/platform-routes";
 import Link from "next/link";
-import { CuriosityCard } from "@/components/curiosities/CuriosityCard";
+import { NewspaperHomePreview } from "@/components/news/NewspaperArticles";
 import {
   PublicHomeHero,
   PublicHowItWorks,
@@ -12,7 +12,6 @@ import { WorkshopGrid } from "@/components/workshop/WorkshopGrid";
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { curiosities } from "@/data/curiosities";
 import { listArticles, seedArticlesIfEmpty } from "@/lib/db/articles";
 import { listClassifieds } from "@/lib/db/classifieds";
 import { getSponsorshipTier, sortWorkshopsBySponsorship } from "@/lib/db/platform";
@@ -22,16 +21,7 @@ import type { SponsorshipTier } from "@/types/platform-admin";
 export default async function HomePage() {
   await seedArticlesIfEmpty();
   const dbArticles = await listArticles(true);
-  const featuredCuriosities = dbArticles.length > 0
-    ? dbArticles.slice(0, 3).map((a) => ({
-        id: a.id,
-        title: a.title,
-        summary: a.summary,
-        content: a.content,
-        category: a.category,
-        icon: a.icon,
-      }))
-    : curiosities.slice(0, 3);
+  const featuredCuriosities = dbArticles.slice(0, 6);
   const classifiedPreview = (await listClassifieds({ activeOnly: true })).slice(0, 3);
   const workshops = await sortWorkshopsBySponsorship(await listWorkshops());
   const cities = new Set(workshops.map((w) => w.city));
@@ -75,23 +65,26 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <SectionHeader
             eyebrow="Conteúdo"
-            title="Notícias relevantes"
-            description={`Avisos e artigos publicados pela equipe ${APP_NAME}.`}
+            title="Jornal e manchetes"
+            description={`As últimas notícias e dicas publicadas pela equipe ${APP_NAME}.`}
             action={
               <Link
                 href="/curiosidades"
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent-hover"
               >
-                Ver notícias
+                Ver jornal completo
                 <Icon name="arrow-right" className="h-4 w-4" />
               </Link>
             }
           />
-          <div className="grid gap-6 md:grid-cols-3">
-            {featuredCuriosities.map((curiosity) => (
-              <CuriosityCard key={curiosity.id} curiosity={curiosity} />
-            ))}
-          </div>
+          {featuredCuriosities.length > 0 ? (
+            <NewspaperHomePreview
+              lead={featuredCuriosities[0]}
+              headlines={featuredCuriosities.slice(1, 4)}
+            />
+          ) : (
+            <p className="text-center text-muted">Em breve, novas matérias no jornal.</p>
+          )}
         </div>
       </section>
 

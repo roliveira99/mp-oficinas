@@ -1,41 +1,44 @@
 import { APP_NAME } from "@/lib/brand";
-import Link from "next/link";
-import { CuriosityCard } from "@/components/curiosities/CuriosityCard";
-import { SectionHeader } from "@/components/ui/SectionHeader";
+import { formatCategoryLabel } from "@/lib/article-slug";
+import {
+  NewspaperLeadStory,
+  NewspaperHeadlineGrid,
+  NewspaperSecondaryGrid,
+} from "@/components/news/NewspaperArticles";
+import { NewspaperCategoryNav, NewspaperMasthead } from "@/components/news/NewspaperMasthead";
 import { listArticles, seedArticlesIfEmpty } from "@/lib/db/articles";
 
 export const metadata = {
-  title: `Notícias — ${APP_NAME}`,
-  description: "Notícias e avisos relevantes sobre o setor automotivo.",
+  title: `Jornal — ${APP_NAME}`,
+  description: "Notícias, dicas e manchetes sobre serviços, manutenção e negócios locais.",
 };
 
 export default async function CuriosidadesPage() {
   await seedArticlesIfEmpty();
   const articles = await listArticles(true);
 
+  const [lead, ...rest] = articles;
+  const sidebar = rest.slice(0, 5);
+  const secondary = rest.slice(5);
+
+  const categories = [...new Set(articles.map((a) => formatCategoryLabel(a.category)))];
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <SectionHeader
-        eyebrow="Notícias relevantes"
-        title={`Jornal ${APP_NAME}`}
-        description="Conteúdos e avisos publicados pela equipe da plataforma"
-      />
+    <div className="newspaper-page mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <NewspaperMasthead />
+      <NewspaperCategoryNav categories={categories} />
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {articles.map((a) => (
-          <CuriosityCard
-            key={a.id}
-            curiosity={{ id: a.id, title: a.title, summary: a.summary, content: a.content, category: a.category, icon: a.icon }}
-            expanded
-          />
-        ))}
-      </div>
-
-      <p className="mt-10 text-center text-sm text-muted">
-        <Link href="/classificados" className="font-medium text-accent hover:underline">
-          Ver classificados de vendas
-        </Link>
-      </p>
+      {articles.length === 0 ? (
+        <p className="py-16 text-center text-muted">Nenhuma matéria publicada ainda.</p>
+      ) : (
+        <>
+          <div className="grid gap-8 lg:grid-cols-3">
+            {lead && <NewspaperLeadStory article={lead} />}
+            <NewspaperHeadlineGrid articles={sidebar} />
+          </div>
+          <NewspaperSecondaryGrid articles={secondary} />
+        </>
+      )}
     </div>
   );
 }

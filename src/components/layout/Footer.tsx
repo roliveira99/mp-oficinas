@@ -37,7 +37,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/curiosidades" className="hover:text-accent">
-                  Conteúdo educativo
+                  Jornal e manchetes
                 </Link>
               </li>
               <li>

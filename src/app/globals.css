@@ -599,3 +599,39 @@ body {
     box-shadow: inset 2px 0 0 var(--dash-sidebar-active-border);
   }
 }
+
+/* Newspaper / jornal público */
+.newspaper-page {
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+
+.newspaper-title {
+  font-family: var(--font-geist-sans), Georgia, "Times New Roman", serif;
+  letter-spacing: -0.02em;
+}
+
+.newspaper-headline {
+  font-family: var(--font-geist-sans), Georgia, "Times New Roman", serif;
+  letter-spacing: -0.015em;
+}
+
+.newspaper-deck {
+  font-family: var(--font-geist-sans), Georgia, serif;
+}
+
+.newspaper-body p:first-of-type::first-letter {
+  float: left;
+  margin: 0.05em 0.12em 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 3.25rem;
+  font-weight: 700;
+  line-height: 0.85;
+  color: var(--foreground);
+}
+
+.newspaper-photo-placeholder {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  background:
+    linear-gradient(135deg, var(--accent-soft) 0%, var(--surface) 45%, var(--border) 100%);
+}
