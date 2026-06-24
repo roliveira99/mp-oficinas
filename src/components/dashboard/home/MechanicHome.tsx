@@ -3,23 +3,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { FeatureList, PageHeader } from "@/components/dashboard/DashboardUI";
+import { PageHeader } from "@/components/dashboard/DashboardUI";
 import { Icon } from "@/components/ui/Icon";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getOperationalConfig } from "@/lib/verticals/operational";
-import { roleRestrictions } from "@/lib/permissions";
 import { orderStatusLabels } from "@/lib/labels";
 import type { MechanicDashboardStats } from "@/types/dashboard-insights";
-
-const mecanicoFeatures = [
-  "Criar orçamento",
-  "Registrar serviços e peças utilizadas",
-  "Consultar histórico dos próprios serviços",
-  "Consultar comissões e produtividade",
-  "Solicitar alteração de orçamento",
-  "Registrar fotos do veículo",
-  "Atualizar status do serviço",
-];
 
 export function MechanicHome() {
   const { user } = useAuth();
@@ -110,8 +99,6 @@ export function MechanicHome() {
           <p className="mt-1 text-sm text-muted">Acompanhar desempenho</p>
         </Link>
       </div>
-
-      <FeatureList allowed={mecanicoFeatures} restricted={roleRestrictions.mecanico} />
     </div>
   );
 }

@@ -3,20 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { FeatureList, PageHeader } from "@/components/dashboard/DashboardUI";
+import { PageHeader } from "@/components/dashboard/DashboardUI";
 import { fetchAdminUsers, fetchAdminWorkshops } from "@/lib/api/admin-client";
-import { roleLabels, roleRestrictions } from "@/lib/permissions";
-
-const masterFeatures = [
-  "Cadastrar oficinas reais",
-  "Criar contas e acessos",
-  "Visualizar todas as oficinas",
-  "Relatórios globais",
-  "Dashboard geral",
-  "Moderação de avaliações",
-  "Patrocínios e anúncios",
-  "Suporte administrativo",
-];
+import { roleLabels } from "@/lib/permissions";
 
 export function AdminHome() {
   const [workshopCount, setWorkshopCount] = useState(0);
@@ -83,8 +72,6 @@ export function AdminHome() {
           </ol>
         </div>
       </div>
-
-      <FeatureList allowed={masterFeatures} restricted={roleRestrictions.master} />
     </div>
   );
 }
