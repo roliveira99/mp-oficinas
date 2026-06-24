@@ -45,7 +45,9 @@ export function NewspaperCategoryNav({
   activeCategories: string[];
 }) {
   const items = ARTICLE_CATEGORIES.filter((c) => activeCategories.includes(c.value));
-  if (items.length === 0) return null;
+  const showClassifieds = activeCategories.includes("classificados");
+
+  if (items.length === 0 && !showClassifieds) return null;
 
   return (
     <nav
@@ -61,6 +63,14 @@ export function NewspaperCategoryNav({
           {cat.label}
         </a>
       ))}
+      {showClassifieds && (
+        <a
+          href="#secao-classificados"
+          className="newspaper-premium-nav rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-amber-700 transition hover:border-amber-500 dark:text-amber-300"
+        >
+          Classificados premium
+        </a>
+      )}
     </nav>
   );
 }

@@ -11,6 +11,7 @@ interface AdRow {
   price: number | null;
   contact: string | null;
   category: string;
+  premium: boolean;
   active: boolean;
 }
 
@@ -60,7 +61,7 @@ export default function ClassificadosDashboardPage() {
     <PermissionGuard permissions={["owner.cadastro_servicos"]}>
       <PageHeader
         title="Classificados"
-        description="Publique anúncios de vendas e divulgações — aparecem na vitrine pública do site"
+        description="Publique anúncios na vitrine pública. Destaque premium no Jornal é definido pelo administrador."
         actions={<ActionButton label={showForm ? "Fechar" : "+ Novo anúncio"} variant="primary" onClick={() => setShowForm(!showForm)} />}
       />
 
@@ -83,11 +84,16 @@ export default function ClassificadosDashboardPage() {
       )}
 
       <DataTable
-        headers={["Título", "Categoria", "Preço", "Contato", "Status", "Ações"]}
+        headers={["Título", "Categoria", "Preço", "Premium", "Contato", "Status", "Ações"]}
         rows={ads.map((a) => [
           a.title,
           a.category,
           a.price != null ? `R$ ${a.price.toFixed(2)}` : "—",
+          a.premium ? (
+            <span key={`pr-${a.id}`} className="dash-badge">No jornal</span>
+          ) : (
+            "—"
+          ),
           a.contact ?? "—",
           a.active ? "Ativo" : "Inativo",
           <ActionButton

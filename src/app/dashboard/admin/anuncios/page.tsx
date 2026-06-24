@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActionButton, DataTable, PageHeader, TabPanel } from "@/components/dashboard/DashboardUI";
 import { PermissionGuard } from "@/components/dashboard/PermissionGuard";
+import { ClassifiedPremiumAdminPanel } from "@/components/admin/ClassifiedPremiumAdminPanel";
 import { JournalAdminPanel } from "@/components/admin/JournalAdminPanel";
 import {
   apiAddAnnouncement,
@@ -65,6 +66,11 @@ export default function AdminAnunciosPage() {
       id: "jornal",
       label: "Jornal / Manchetes",
       content: <JournalAdminPanel onFeedback={setFeedback} />,
+    },
+    {
+      id: "classificados",
+      label: "Classificados premium",
+      content: <ClassifiedPremiumAdminPanel onFeedback={setFeedback} />,
     },
     {
       id: "banners",

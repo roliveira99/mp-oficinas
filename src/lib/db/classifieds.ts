@@ -10,41 +10,49 @@ export interface ClassifiedAdRecord {
   contact: string | null;
   category: string;
   images: string[];
+  premium: boolean;
   active: boolean;
   createdAt: string;
   expiresAt: string | null;
 }
 
+function notExpired(expiresAt: Date | null): boolean {
+  return !expiresAt || expiresAt > new Date();
+}
+
 export async function listClassifieds(opts?: {
   workshopId?: string;
   activeOnly?: boolean;
-  publicOnly?: boolean;
+  premiumOnly?: boolean;
 }): Promise<ClassifiedAdRecord[]> {
   const rows = await prisma.classifiedAd.findMany({
     where: {
       ...(opts?.workshopId ? { workshopId: opts.workshopId } : {}),
       ...(opts?.activeOnly !== false ? { active: true } : {}),
+      ...(opts?.premiumOnly ? { premium: true } : {}),
     },
     include: { workshop: { select: { name: true } } },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ premium: "desc" }, { createdAt: "desc" }],
   });
-  return rows
-    .filter((r) => !r.expiresAt || r.expiresAt > new Date())
-    .map(mapClassified);
+  return rows.filter((r) => notExpired(r.expiresAt)).map(mapClassified);
 }
 
-export async function createClassified(
-  input: {
-    workshopId?: string;
-    title: string;
-    body: string;
-    price?: number;
-    contact?: string;
-    category?: string;
-    images?: string[];
-    expiresAt?: string;
-  }
-): Promise<ClassifiedAdRecord> {
+export async function listPremiumClassifieds(limit?: number): Promise<ClassifiedAdRecord[]> {
+  const rows = await listClassifieds({ activeOnly: true, premiumOnly: true });
+  return limit ? rows.slice(0, limit) : rows;
+}
+
+export async function createClassified(input: {
+  workshopId?: string;
+  title: string;
+  body: string;
+  price?: number;
+  contact?: string;
+  category?: string;
+  images?: string[];
+  premium?: boolean;
+  expiresAt?: string;
+}): Promise<ClassifiedAdRecord> {
   const row = await prisma.classifiedAd.create({
     data: {
       workshopId: input.workshopId ?? null,
@@ -54,6 +62,7 @@ export async function createClassified(
       contact: input.contact?.trim() || null,
       category: input.category?.trim() || "geral",
       images: (input.images ?? []) as object,
+      premium: input.premium ?? false,
       expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
       active: true,
     },
@@ -71,13 +80,19 @@ export async function updateClassified(
     price: number;
     contact: string;
     category: string;
+    premium: boolean;
     active: boolean;
-  }>
+  }>,
+  opts?: { allowPremium?: boolean }
 ): Promise<{ ok: true; ad: ClassifiedAdRecord } | { ok: false; error: string }> {
   const existing = await prisma.classifiedAd.findFirst({
     where: { id, ...(workshopId ? { workshopId } : {}) },
   });
   if (!existing) return { ok: false, error: "Anúncio não encontrado." };
+
+  if (input.premium !== undefined && !opts?.allowPremium) {
+    return { ok: false, error: "Somente o administrador pode definir anúncio premium no jornal." };
+  }
 
   const row = await prisma.classifiedAd.update({
     where: { id },
@@ -87,6 +102,7 @@ export async function updateClassified(
       ...(input.price !== undefined ? { price: input.price } : {}),
       ...(input.contact !== undefined ? { contact: input.contact.trim() || null } : {}),
       ...(input.category !== undefined ? { category: input.category.trim() } : {}),
+      ...(input.premium !== undefined ? { premium: input.premium } : {}),
       ...(input.active !== undefined ? { active: input.active } : {}),
     },
     include: { workshop: { select: { name: true } } },
@@ -115,6 +131,7 @@ function mapClassified(row: {
   contact: string | null;
   category: string;
   images: unknown;
+  premium: boolean;
   active: boolean;
   createdAt: Date;
   expiresAt: Date | null;
@@ -129,8 +146,20 @@ function mapClassified(row: {
     contact: row.contact,
     category: row.category,
     images: (row.images as string[] | null) ?? [],
+    premium: row.premium,
     active: row.active,
     createdAt: row.createdAt.toISOString(),
     expiresAt: row.expiresAt?.toISOString() ?? null,
   };
+}
+
+export function formatClassifiedCategory(category: string): string {
+  const labels: Record<string, string> = {
+    vendas: "Vendas",
+    servicos: "Serviços",
+    veiculos: "Veículos",
+    pecas: "Peças",
+    geral: "Geral",
+  };
+  return labels[category] ?? category;
 }

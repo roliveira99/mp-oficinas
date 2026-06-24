@@ -6,12 +6,17 @@ import {
 } from "@/components/news/NewspaperArticles";
 import { NewspaperMasthead } from "@/components/news/NewspaperMasthead";
 import { Icon } from "@/components/ui/Icon";
-import {
-  pickLeadArticle,
-  type SiteArticleRecord,
-} from "@/lib/db/articles";
+import { NewspaperClassifiedsSection } from "@/components/news/NewspaperClassifieds";
+import type { ClassifiedAdRecord } from "@/lib/db/classifieds";
+import { pickLeadArticle, type SiteArticleRecord } from "@/lib/db/articles";
 
-export function NewspaperHomeTop({ articles }: { articles: SiteArticleRecord[] }) {
+export function NewspaperHomeTop({
+  articles,
+  premiumClassifieds,
+}: {
+  articles: SiteArticleRecord[];
+  premiumClassifieds: ClassifiedAdRecord[];
+}) {
   const lead = pickLeadArticle(articles);
   const headlines = articles.filter((a) => a.id !== lead?.id).slice(0, 5);
 
@@ -20,7 +25,10 @@ export function NewspaperHomeTop({ articles }: { articles: SiteArticleRecord[] }
       <section className="border-b border-border bg-surface">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <NewspaperMasthead compact />
-          <p className="text-center text-muted">Em breve, novas manchetes no jornal.</p>
+          {articles.length === 0 && premiumClassifieds.length === 0 ? (
+            <p className="text-center text-muted">Em breve, novas manchetes no jornal.</p>
+          ) : null}
+          <NewspaperClassifiedsSection ads={premiumClassifieds} compact />
         </div>
       </section>
     );
@@ -39,6 +47,8 @@ export function NewspaperHomeTop({ articles }: { articles: SiteArticleRecord[] }
         </div>
 
         <NewspaperCategoryColumns articles={articles} excludeId={lead.id} />
+
+        <NewspaperClassifiedsSection ads={premiumClassifieds} compact />
 
         <div className="mt-8 flex justify-center border-t border-border pt-6">
           <Link

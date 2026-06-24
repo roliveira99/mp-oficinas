@@ -635,3 +635,26 @@ body {
   background:
     linear-gradient(135deg, var(--accent-soft) 0%, var(--surface) 45%, var(--border) 100%);
 }
+
+.newspaper-classified-placeholder {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, var(--surface) 50%, var(--border) 100%);
+}
+
+.newspaper-premium-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.25rem;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.newspaper-classified-card {
+  position: relative;
+}
