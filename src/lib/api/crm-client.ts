@@ -209,13 +209,14 @@ export async function fetchAllAgenda() {
 }
 
 export async function apiAgendaAction(
-  action: "approve" | "reject",
-  id: string
-): Promise<{ ok: boolean; whatsappUrl?: string }> {
+  action: "approve" | "reject" | "whatsapp" | "propose-change" | "confirm-change" | "cancel-change",
+  id: string,
+  extra?: { proposedDate?: string; proposedTime?: string }
+): Promise<{ ok: boolean; whatsappUrl?: string; error?: string }> {
   const res = await fetch("/api/agenda", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, id }),
+    body: JSON.stringify({ action, id, ...extra }),
   });
-  return res.json() as Promise<{ ok: boolean; whatsappUrl?: string }>;
+  return res.json() as Promise<{ ok: boolean; whatsappUrl?: string; error?: string }>;
 }

@@ -1,14 +1,10 @@
 import Link from "next/link";
-import {
-  NewspaperLeadStory,
-  NewspaperHeadlineGrid,
-  NewspaperCategoryColumns,
-} from "@/components/news/NewspaperArticles";
+import { NewsDashboard } from "@/components/news/NewsDashboard";
 import { NewspaperCategoryNav, NewspaperMasthead } from "@/components/news/NewspaperMasthead";
 import { Icon } from "@/components/ui/Icon";
 import { NewspaperClassifiedsSection } from "@/components/news/NewspaperClassifieds";
 import type { ClassifiedAdRecord } from "@/lib/db/classifieds";
-import { pickLeadArticle, type SiteArticleRecord } from "@/lib/db/articles";
+import type { SiteArticleRecord } from "@/lib/db/articles";
 
 export function NewspaperHomeTop({
   articles,
@@ -17,38 +13,25 @@ export function NewspaperHomeTop({
   articles: SiteArticleRecord[];
   premiumClassifieds: ClassifiedAdRecord[];
 }) {
-  const lead = pickLeadArticle(articles);
-  const headlines = articles.filter((a) => a.id !== lead?.id).slice(0, 5);
-
-  if (!lead) {
+  if (articles.length === 0 && premiumClassifieds.length === 0) {
     return (
-      <section id="jornal" className="border-b border-border bg-surface">
+      <section id="jornal" className="news-feed-page border-b border-border bg-surface">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <NewspaperMasthead compact />
           <NewspaperCategoryNav activeTab="inicio" />
-          {articles.length === 0 && premiumClassifieds.length === 0 ? (
-            <p className="text-center text-muted">Em breve, novas manchetes no jornal.</p>
-          ) : null}
-          <NewspaperClassifiedsSection ads={premiumClassifieds} compact />
+          <p className="text-center text-muted">Em breve, novas manchetes no jornal.</p>
         </div>
       </section>
     );
   }
 
   return (
-    <section id="jornal" className="border-b border-border bg-surface">
+    <section id="jornal" className="news-feed-page border-b border-border bg-surface">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
         <NewspaperMasthead compact />
         <NewspaperCategoryNav activeTab="inicio" />
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <NewspaperLeadStory article={lead} />
-          </div>
-          <NewspaperHeadlineGrid articles={headlines} title="Últimas manchetes" />
-        </div>
-
-        <NewspaperCategoryColumns articles={articles} excludeId={lead.id} />
+        {articles.length > 0 && <NewsDashboard articles={articles} limit={12} />}
 
         <NewspaperClassifiedsSection ads={premiumClassifieds} compact />
 
@@ -57,7 +40,7 @@ export function NewspaperHomeTop({
             href="/curiosidades#jornal-completo"
             className="inline-flex items-center gap-2 text-sm font-semibold text-accent hover:text-accent-hover"
           >
-            Ver jornal completo — todas as seções
+            Ver todas as notícias
             <Icon name="arrow-right" className="h-4 w-4" />
           </Link>
         </div>
@@ -68,8 +51,8 @@ export function NewspaperHomeTop({
 
 /** Agrupa artigos por categoria para a página /curiosidades. */
 export function groupArticlesForJournalPage(articles: SiteArticleRecord[]) {
-  const lead = pickLeadArticle(articles);
-  const rest = articles.filter((a) => a.id !== lead?.id);
+  const lead = articles[0] ?? null;
+  const rest = lead ? articles.filter((a) => a.id !== lead.id) : articles;
   const sidebar = rest.slice(0, 5);
   const secondary = rest.slice(5);
   return { lead, sidebar, secondary, all: articles };

@@ -75,8 +75,10 @@ export interface AgendaRequest {
   vehicle?: string;
   preferredDate: string;
   preferredTime: string;
+  proposedDate?: string;
+  proposedTime?: string;
   service: string;
-  status: "pendente" | "aprovado" | "recusado";
+  status: "pendente" | "aprovado" | "alteracao_pendente" | "recusado";
   createdAt: string;
 }
 

@@ -162,7 +162,7 @@ async function buildAlerts(workshopId: string): Promise<DashboardAlert[]> {
       },
     }),
     prisma.agendaRequest.count({
-      where: { workshopId, status: "pendente" },
+      where: { workshopId, status: { in: ["pendente", "alteracao_pendente"] } },
     }),
   ]);
 

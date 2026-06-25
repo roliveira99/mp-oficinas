@@ -45,6 +45,7 @@ enum BusinessVertical {
 enum AgendaStatus {
   pendente
   aprovado
+  alteracao_pendente
   recusado
 }
 
@@ -290,6 +291,8 @@ model AgendaRequest {
   vehicle       String?
   preferredDate String
   preferredTime String
+  proposedDate  String?
+  proposedTime  String?
   service       String
   status        AgendaStatus @default(pendente)
   createdAt     DateTime     @default(now())

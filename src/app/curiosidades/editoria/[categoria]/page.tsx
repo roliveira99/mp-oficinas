@@ -35,7 +35,7 @@ export default async function JournalCategoryPage({ params }: Props) {
   const articles = await listArticles({ activeOnly: true, category: categoria });
 
   return (
-    <div className="newspaper-page mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="news-feed-page newspaper-page mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <NewspaperMasthead />
       <NewspaperCategoryNav activeTab={categoria as JournalTabId} />
       <NewspaperCategoryPage category={def} articles={articles} />
