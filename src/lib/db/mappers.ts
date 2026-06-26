@@ -27,6 +27,7 @@ export function mapDbWorkshop(row: DbWorkshop): Workshop {
     image: row.image,
     coverImage: row.coverImage ?? undefined,
     gallery: (row.gallery as unknown as WorkshopGalleryItem[] | null) ?? undefined,
+    profileVideos: (row.profileVideos as unknown as string[] | null) ?? undefined,
     specialties: row.specialties as unknown as string[],
     hasAgenda: row.hasAgenda,
     paymentMethods: row.paymentMethods as unknown as string[],

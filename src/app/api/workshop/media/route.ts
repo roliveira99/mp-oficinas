@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getWorkshopMedia, updateWorkshopMedia } from "@/lib/db/workshop-media";
 import { getRequestUser, userHasPermission } from "@/lib/db/request-auth";
+import { isOversizedMediaUrl } from "@/lib/media-url";
 import type { WorkshopGalleryItem } from "@/types/workshop";
 
 export async function GET() {
@@ -32,11 +33,12 @@ export async function PUT(request: Request) {
   const tooLarge = [
     body.coverImage,
     ...(body.gallery?.map((g) => g.url) ?? []),
-  ].some((url) => typeof url === "string" && url.length > 2_500_000);
+    ...(body.profileVideos ?? []),
+  ].some(isOversizedMediaUrl);
 
   if (tooLarge) {
     return NextResponse.json(
-      { error: "Uma ou mais imagens são muito grandes. Tente fotos menores." },
+      { error: "Um ou mais arquivos são muito grandes. Use fotos menores ou vídeos de até 5 MB." },
       { status: 413 }
     );
   }

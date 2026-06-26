@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { processImageFile, processImageFiles } from "@/lib/client-image";
+import { processGalleryMediaFile, processImageFile } from "@/lib/client-media";
 
 interface ImageFilePickerProps {
   label?: string;
@@ -96,17 +96,15 @@ export function ImageFilePicker({
   );
 }
 
-interface GalleryImagePickerProps {
-  onAdd: (items: { url: string; caption: string }[]) => void;
-  caption?: string;
-  disabled?: boolean;
-}
-
-export function GalleryImagePicker({
+export function GalleryMediaPicker({
   onAdd,
   caption = "",
   disabled = false,
-}: GalleryImagePickerProps) {
+}: {
+  onAdd: (items: { url: string; caption: string; mediaType: "image" | "video" }[]) => void;
+  caption?: string;
+  disabled?: boolean;
+}) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -118,10 +116,18 @@ export function GalleryImagePicker({
     setBusy(true);
     setError("");
     try {
-      const urls = await processImageFiles(fileList);
-      onAdd(urls.map((url) => ({ url, caption: caption.trim() || "Foto do perfil" })));
+      const items = await Promise.all(Array.from(fileList).map((file) => processGalleryMediaFile(file)));
+      onAdd(
+        items.map((item) => ({
+          url: item.url,
+          mediaType: item.mediaType,
+          caption:
+            caption.trim() ||
+            (item.mediaType === "video" ? "Vídeo do perfil" : "Foto do perfil"),
+        }))
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar imagens.");
+      setError(err instanceof Error ? err.message : "Erro ao carregar arquivos.");
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -134,7 +140,7 @@ export function GalleryImagePicker({
         ref={inputRef}
         id={inputId}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         multiple
         className="sr-only"
         disabled={disabled || busy}
@@ -147,9 +153,9 @@ export function GalleryImagePicker({
         }`}
       >
         <Icon name="sparkles" className="h-4 w-4 opacity-70" />
-        {busy ? "Enviando fotos…" : "Adicionar fotos da galeria"}
+        {busy ? "Enviando arquivos…" : "Adicionar fotos ou vídeos"}
       </label>
-      <p className="text-xs text-muted">Você pode selecionar várias imagens de uma vez.</p>
+      <p className="text-xs text-muted">Selecione da galeria do celular ou do computador.</p>
       {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );

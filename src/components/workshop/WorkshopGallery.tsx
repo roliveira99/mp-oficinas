@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import { MediaPreview } from "@/components/ui/MediaPreview";
+import { isDataVideoUrl } from "@/lib/media-url";
 import type { WorkshopGalleryItem } from "@/types/workshop";
 
 const kindLabels: Record<WorkshopGalleryItem["kind"], string> = {
@@ -10,6 +11,10 @@ const kindLabels: Record<WorkshopGalleryItem["kind"], string> = {
   depois: "Depois",
   equipe: "Equipe",
 };
+
+function isGalleryVideo(item: WorkshopGalleryItem): boolean {
+  return item.mediaType === "video" || isDataVideoUrl(item.url);
+}
 
 interface WorkshopGalleryProps {
   items: WorkshopGalleryItem[];
@@ -21,23 +26,26 @@ export function WorkshopGallery({ items, workshopName }: WorkshopGalleryProps) {
   if (items.length === 0) return null;
 
   const current = items[active] ?? items[0];
+  const currentIsVideo = isGalleryVideo(current);
 
   return (
     <section id="galeria" className="scroll-mt-24 mt-12">
       <h2 className="text-2xl font-semibold tracking-tight">Galeria</h2>
-      <p className="mt-1 text-sm text-muted">Conheça o espaço e resultados de serviços realizados.</p>
+      <p className="mt-1 text-sm text-muted">Fotos e vídeos do negócio.</p>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <div className="relative aspect-[4/3] overflow-hidden rounded-xl lg:col-span-2 lg:aspect-auto lg:min-h-[320px]">
-          <Image
+        <div
+          className={`relative overflow-hidden rounded-xl lg:col-span-2 ${
+            currentIsVideo ? "aspect-video" : "aspect-[4/3] lg:aspect-auto lg:min-h-[320px]"
+          }`}
+        >
+          <MediaPreview
             src={current.url}
             alt={`${workshopName} — ${current.caption}`}
-            fill
-            className="object-cover"
-            sizes="(max-width: 1024px) 100vw, 66vw"
-            priority
+            className="h-full w-full object-cover"
+            videoClassName="h-full w-full object-cover"
           />
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
             <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium text-white backdrop-blur">
               {kindLabels[current.kind]}
             </span>
@@ -54,7 +62,18 @@ export function WorkshopGallery({ items, workshopName }: WorkshopGalleryProps) {
                 active === index ? "border-accent" : "border-transparent opacity-80 hover:opacity-100"
               }`}
             >
-              <Image src={item.url} alt={item.caption} fill className="object-cover" sizes="120px" />
+              <MediaPreview
+                src={item.url}
+                alt={item.caption}
+                className="h-full w-full object-cover"
+                videoClassName="h-full w-full object-cover"
+                controls={false}
+              />
+              {isGalleryVideo(item) && (
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25 text-xs font-semibold text-white">
+                  ▶
+                </span>
+              )}
             </button>
           ))}
         </div>

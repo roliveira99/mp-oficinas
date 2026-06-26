@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/dashboard/DashboardUI";
 import { PermissionGuard } from "@/components/dashboard/PermissionGuard";
-import { GalleryImagePicker, ImageFilePicker } from "@/components/ui/ImageFilePicker";
+import { GalleryMediaPicker, ImageFilePicker } from "@/components/ui/ImageFilePicker";
+import { VideoFilePicker } from "@/components/ui/VideoFilePicker";
+import { MediaPreview } from "@/components/ui/MediaPreview";
 import { Icon } from "@/components/ui/Icon";
+import { mediaUrlLabel } from "@/lib/media-url";
 import { fetchWorkshopMedia, saveWorkshopMedia } from "@/lib/api/crm-client";
 import type { WorkshopGalleryItem } from "@/types/workshop";
 
@@ -67,7 +70,7 @@ export default function MidiaPage() {
     }
   }
 
-  function addGalleryItems(items: { url: string; caption: string }[]) {
+  function addGalleryItems(items: { url: string; caption: string; mediaType: "image" | "video" }[]) {
     setGallery((prev) => [
       ...prev,
       ...items.map((item, index) => ({
@@ -75,6 +78,7 @@ export default function MidiaPage() {
         url: item.url,
         caption: item.caption,
         kind: "ambiente" as const,
+        mediaType: item.mediaType,
       })),
     ]);
   }
@@ -141,40 +145,61 @@ export default function MidiaPage() {
         </section>
 
         <section className="card p-5">
-          <h2 className="font-semibold text-foreground">Vídeos (URLs YouTube/Vimeo)</h2>
-          <div className="mt-4 flex gap-2">
-            <input
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              className="input-field flex-1"
-              placeholder="https://youtube.com/..."
+          <h2 className="font-semibold text-foreground">Vídeos do perfil</h2>
+          <p className="mt-1 text-sm text-muted">
+            Escolha vídeos do celular ou computador, ou cole um link do YouTube/Vimeo.
+          </p>
+
+          <div className="mt-4 space-y-4">
+            <VideoFilePicker
+              key={`device-video-${profileVideos.length}`}
+              label="Vídeo do dispositivo"
+              hint="MP4, WebM ou MOV — até 5 MB. Prefira clipes curtos."
+              onChange={(url) => setProfileVideos((p) => [...p, url])}
+              buttonLabel="Escolher vídeo do dispositivo"
+              previewClassName="hidden"
             />
-            <button
-              type="button"
-              onClick={() => {
-                if (!videoUrl.trim()) return;
-                setProfileVideos((p) => [...p, videoUrl.trim()]);
-                setVideoUrl("");
-              }}
-              className="rounded-lg border border-border px-4 py-2 text-sm"
-            >
-              Adicionar vídeo
-            </button>
+
+            <div className="flex gap-2">
+              <input
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                className="input-field flex-1"
+                placeholder="https://youtube.com/... (opcional)"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!videoUrl.trim()) return;
+                  setProfileVideos((p) => [...p, videoUrl.trim()]);
+                  setVideoUrl("");
+                }}
+                className="rounded-lg border border-border px-4 py-2 text-sm"
+              >
+                Adicionar link
+              </button>
+            </div>
           </div>
-          <ul className="mt-3 space-y-1 text-sm text-muted">
-            {profileVideos.map((v, i) => (
-              <li key={v} className="flex justify-between gap-2">
-                <span className="truncate">{v}</span>
-                <button
-                  type="button"
-                  className="text-danger"
-                  onClick={() => setProfileVideos((p) => p.filter((_, j) => j !== i))}
-                >
-                  Remover
-                </button>
-              </li>
-            ))}
-          </ul>
+
+          {profileVideos.length > 0 && (
+            <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+              {profileVideos.map((v, i) => (
+                <li key={`${i}-${v.slice(0, 20)}`} className="group relative overflow-hidden rounded-xl border border-border">
+                  <MediaPreview src={v} videoClassName="aspect-video w-full" className="aspect-video w-full object-cover" />
+                  <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2 text-xs text-muted">
+                    <span>{mediaUrlLabel(v)}</span>
+                    <button
+                      type="button"
+                      className="text-danger"
+                      onClick={() => setProfileVideos((p) => p.filter((_, j) => j !== i))}
+                    >
+                      Remover
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="card p-5">
@@ -194,9 +219,9 @@ export default function MidiaPage() {
         </section>
 
         <section className="card p-5">
-          <h2 className="font-semibold text-foreground">Galeria de fotos</h2>
+          <h2 className="font-semibold text-foreground">Galeria de fotos e vídeos</h2>
           <p className="mt-1 text-sm text-muted">
-            Adicione fotos salvas no seu dispositivo — ambiente, equipe, produtos ou serviços.
+            Adicione fotos ou vídeos do seu dispositivo — ambiente, equipe, produtos ou serviços.
           </p>
 
           <div className="mt-4 space-y-3">
@@ -209,17 +234,17 @@ export default function MidiaPage() {
                 placeholder="Ex.: Nossa loja"
               />
             </label>
-            <GalleryImagePicker caption={newCaption} onAdd={addGalleryItems} />
+            <GalleryMediaPicker caption={newCaption} onAdd={addGalleryItems} />
           </div>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {gallery.map((item) => (
               <figure key={item.id} className="group relative overflow-hidden rounded-xl border border-border">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <MediaPreview
                   src={item.url}
-                  alt={item.caption ?? "Foto do perfil"}
+                  alt={item.caption ?? "Mídia do perfil"}
                   className="aspect-video w-full object-cover"
+                  videoClassName="aspect-video w-full object-cover"
                 />
                 {item.caption && (
                   <figcaption className="border-t border-border px-3 py-2 text-xs text-muted">
@@ -230,7 +255,7 @@ export default function MidiaPage() {
                   type="button"
                   onClick={() => removeGalleryItem(item.id)}
                   className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                  aria-label="Remover foto"
+                  aria-label="Remover mídia"
                 >
                   <Icon name="x" className="h-4 w-4" />
                 </button>
@@ -238,7 +263,7 @@ export default function MidiaPage() {
             ))}
           </div>
           {gallery.length === 0 && (
-            <p className="mt-4 text-sm text-muted">Nenhuma foto na galeria ainda.</p>
+            <p className="mt-4 text-sm text-muted">Nenhuma foto ou vídeo na galeria ainda.</p>
           )}
         </section>
 

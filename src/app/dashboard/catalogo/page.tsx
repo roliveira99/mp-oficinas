@@ -6,6 +6,8 @@ import { PermissionGuard } from "@/components/dashboard/PermissionGuard";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PageHeader } from "@/components/dashboard/DashboardUI";
 import { ImageFilePicker } from "@/components/ui/ImageFilePicker";
+import { VideoFilePicker } from "@/components/ui/VideoFilePicker";
+import { MediaPreview } from "@/components/ui/MediaPreview";
 import { fetchCatalog, saveCatalog } from "@/lib/api/crm-client";
 import { businessProfilePath } from "@/lib/platform-routes";
 import { formatCatalogPrice, newCatalogItem } from "@/lib/workshop-storage";
@@ -51,11 +53,16 @@ export default function CatalogoPublicoPage() {
     }
   }
 
-  function addItem(type: "services" | "parts", name: string, price: number, imageUrl?: string) {
+  function addItem(
+    type: "services" | "parts",
+    name: string,
+    price: number,
+    opts?: { imageUrl?: string; videoUrl?: string }
+  ) {
     if (!name.trim() || price <= 0) return;
     persist({
       ...catalog,
-      [type]: [...catalog[type], newCatalogItem(name.trim(), price, imageUrl)],
+      [type]: [...catalog[type], newCatalogItem(name.trim(), price, opts)],
     });
   }
 
@@ -82,6 +89,15 @@ export default function CatalogoPublicoPage() {
     });
   }
 
+  function updateVideo(type: "services" | "parts", id: string, videoUrl: string) {
+    persist({
+      ...catalog,
+      [type]: catalog[type].map((i) =>
+        i.id === id ? { ...i, videoUrl: videoUrl || undefined } : i
+      ),
+    });
+  }
+
   const profileHref = slug ? businessProfilePath(slug) : null;
   const publicServiceCount = publicCatalog.services.length;
   const publicPartCount = publicCatalog.parts.length;
@@ -90,7 +106,7 @@ export default function CatalogoPublicoPage() {
     <PermissionGuard permissions={["owner.catalogo"]}>
       <PageHeader
         title="Catálogo do perfil público"
-        description="Serviços e produtos exibidos no seu perfil — como um cardápio do negócio. Adicione foto de cada item."
+        description="Serviços e produtos exibidos no seu perfil — como um cardápio do negócio. Adicione foto ou vídeo de cada item."
       />
 
       {error && <p className="dash-alert dash-alert-error mb-4">{error}</p>}
@@ -123,6 +139,7 @@ export default function CatalogoPublicoPage() {
         onRemove={removeItem}
         onUpdatePrice={updatePrice}
         onUpdateImage={updateImage}
+        onUpdateVideo={updateVideo}
       />
 
       <CatalogEditor
@@ -133,6 +150,7 @@ export default function CatalogoPublicoPage() {
         onRemove={removeItem}
         onUpdatePrice={updatePrice}
         onUpdateImage={updateImage}
+        onUpdateVideo={updateVideo}
         className="mt-8"
       />
     </PermissionGuard>
@@ -147,20 +165,28 @@ function CatalogEditor({
   onRemove,
   onUpdatePrice,
   onUpdateImage,
+  onUpdateVideo,
   className,
 }: {
   title: string;
   type: "services" | "parts";
   items: CatalogItem[];
-  onAdd: (type: "services" | "parts", name: string, price: number, imageUrl?: string) => void;
+  onAdd: (
+    type: "services" | "parts",
+    name: string,
+    price: number,
+    opts?: { imageUrl?: string; videoUrl?: string }
+  ) => void;
   onRemove: (type: "services" | "parts", id: string) => void;
   onUpdatePrice: (type: "services" | "parts", id: string, price: number) => void;
   onUpdateImage: (type: "services" | "parts", id: string, imageUrl: string) => void;
+  onUpdateVideo: (type: "services" | "parts", id: string, videoUrl: string) => void;
   className?: string;
 }) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
 
   return (
     <section className={`card p-5 ${className ?? ""}`}>
@@ -169,10 +195,14 @@ function CatalogEditor({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          onAdd(type, name, Number(price), imageUrl || undefined);
+          onAdd(type, name, Number(price), {
+            imageUrl: imageUrl || undefined,
+            videoUrl: videoUrl || undefined,
+          });
           setName("");
           setPrice("");
           setImageUrl("");
+          setVideoUrl("");
         }}
         className="mt-4 space-y-4"
       >
@@ -206,6 +236,16 @@ function CatalogEditor({
           previewClassName="h-28 w-28 rounded-lg object-cover"
         />
 
+        <VideoFilePicker
+          label="Vídeo do item (opcional)"
+          hint="MP4, WebM ou MOV — até 5 MB."
+          value={videoUrl}
+          onChange={setVideoUrl}
+          onClear={() => setVideoUrl("")}
+          buttonLabel="Escolher vídeo"
+          previewClassName="aspect-video w-full max-w-xs rounded-lg"
+        />
+
         <button type="submit" className="btn btn-primary">
           Adicionar ao catálogo
         </button>
@@ -214,7 +254,15 @@ function CatalogEditor({
       <ul className="mt-6 divide-y divide-border">
         {items.map((item) => (
           <li key={item.id} className="flex flex-wrap items-start gap-4 py-4">
-            {item.imageUrl ? (
+            {item.videoUrl ? (
+              <div className="h-16 w-28 shrink-0 overflow-hidden rounded-lg border border-border">
+                <MediaPreview
+                  src={item.videoUrl}
+                  videoClassName="h-16 w-full object-cover"
+                  className="h-16 w-full object-cover"
+                />
+              </div>
+            ) : item.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={item.imageUrl}
@@ -223,7 +271,7 @@ function CatalogEditor({
               />
             ) : (
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-border bg-surface-hover text-xs text-muted">
-                Sem foto
+                Sem mídia
               </div>
             )}
 
@@ -250,6 +298,16 @@ function CatalogEditor({
                   buttonLabel={item.imageUrl ? "Trocar foto" : "Adicionar foto"}
                   previewClassName="hidden"
                 />
+                <div className="mt-2">
+                  <VideoFilePicker
+                    label=""
+                    value={item.videoUrl ?? ""}
+                    onChange={(url) => onUpdateVideo(type, item.id, url)}
+                    onClear={() => onUpdateVideo(type, item.id, "")}
+                    buttonLabel={item.videoUrl ? "Trocar vídeo" : "Adicionar vídeo"}
+                    previewClassName="hidden"
+                  />
+                </div>
               </div>
             </div>
 

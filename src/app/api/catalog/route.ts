@@ -4,6 +4,7 @@ import { mapDbWorkshop } from "@/lib/db/mappers";
 import { prisma } from "@/lib/db/prisma";
 import { resolveWorkshopPublicCatalog } from "@/lib/db/workshop-catalog";
 import { getRequestUser, userHasPermission } from "@/lib/db/request-auth";
+import { isOversizedMediaUrl } from "@/lib/media-url";
 import type { WorkshopCatalog } from "@/types/workshop";
 
 export async function GET() {
@@ -32,14 +33,14 @@ export async function PUT(request: Request) {
 
   const body = (await request.json()) as { catalog: WorkshopCatalog };
 
-  const imageUrls = [
-    ...body.catalog.services.map((i) => i.imageUrl),
-    ...body.catalog.parts.map((i) => i.imageUrl),
+  const mediaUrls = [
+    ...body.catalog.services.flatMap((i) => [i.imageUrl, i.videoUrl]),
+    ...body.catalog.parts.flatMap((i) => [i.imageUrl, i.videoUrl]),
   ].filter((url): url is string => typeof url === "string" && url.length > 0);
 
-  if (imageUrls.some((url) => url.length > 2_500_000)) {
+  if (mediaUrls.some(isOversizedMediaUrl)) {
     return NextResponse.json(
-      { error: "Uma ou mais imagens do catálogo são muito grandes." },
+      { error: "Uma ou mais fotos ou vídeos do catálogo são muito grandes." },
       { status: 413 }
     );
   }

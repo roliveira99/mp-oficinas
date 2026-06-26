@@ -3,6 +3,7 @@
 import type { Workshop, WorkshopCatalog } from "@/types/workshop";
 import { formatCatalogPrice } from "@/lib/workshop-storage";
 import { PRICE_DISCLAIMER } from "@/lib/workshop-profile";
+import { MediaPreview } from "@/components/ui/MediaPreview";
 import { Icon } from "@/components/ui/Icon";
 
 interface WorkshopCatalogSectionProps {
@@ -41,9 +42,9 @@ function CatalogList({
     );
   }
 
-  const hasImages = items.some((item) => item.imageUrl);
+  const hasMedia = items.some((item) => item.imageUrl || item.videoUrl);
 
-  if (hasImages) {
+  if (hasMedia) {
     return (
       <div>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">{title}</h3>
@@ -53,7 +54,13 @@ function CatalogList({
               key={item.id}
               className="overflow-hidden rounded-xl border border-border bg-surface"
             >
-              {item.imageUrl ? (
+              {item.videoUrl ? (
+                <MediaPreview
+                  src={item.videoUrl}
+                  videoClassName="aspect-[4/3] w-full object-cover"
+                  className="aspect-[4/3] w-full object-cover"
+                />
+              ) : item.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={item.imageUrl}
@@ -62,7 +69,7 @@ function CatalogList({
                 />
               ) : (
                 <div className="flex aspect-[4/3] items-center justify-center bg-surface-hover text-xs text-muted">
-                  Sem foto
+                  Sem mídia
                 </div>
               )}
               <div className="p-3">

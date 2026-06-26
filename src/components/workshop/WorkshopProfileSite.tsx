@@ -13,6 +13,7 @@ import {
 } from "@/components/workshop/WorkshopCatalogSection";
 import { WorkshopContactActions } from "@/components/workshop/WorkshopContactActions";
 import { WorkshopGallery } from "@/components/workshop/WorkshopGallery";
+import { WorkshopProfileVideos } from "@/components/workshop/WorkshopProfileVideos";
 import { WorkshopReviewsSection } from "@/components/workshop/WorkshopReviewsSection";
 import { RatingSummary } from "@/components/workshop/StarRating";
 import { WorkshopOpenBadge } from "@/components/workshop/WorkshopOpenBadge";
@@ -135,6 +136,10 @@ export function WorkshopProfileSite({ workshop, sponsorshipTier = "none" }: Work
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
         {workshop.gallery && workshop.gallery.length > 0 && (
           <WorkshopGallery items={workshop.gallery} workshopName={workshop.name} />
+        )}
+
+        {workshop.profileVideos && workshop.profileVideos.length > 0 && (
+          <WorkshopProfileVideos videos={workshop.profileVideos} workshopName={workshop.name} />
         )}
 
         <div className="mt-12 grid gap-12 lg:grid-cols-3">

@@ -1,11 +1,24 @@
 import type { BusinessVertical } from "@/types/vertical";
 
+export type WorkshopType = "carros" | "motos" | "mista" | "estetica";
+
+export type GalleryItemKind = "ambiente" | "antes" | "depois" | "equipe";
+
+export interface WorkshopGalleryItem {
+  id: string;
+  url: string;
+  caption: string;
+  kind: GalleryItemKind;
+  mediaType?: "image" | "video";
+}
+
 export interface CatalogItem {
   id: string;
   name: string;
   priceFrom: number;
   description?: string;
   imageUrl?: string;
+  videoUrl?: string;
 }
 
 export interface MechanicRankingEntry {
@@ -18,17 +31,6 @@ export interface MechanicRankingEntry {
 export interface WorkshopCatalog {
   services: CatalogItem[];
   parts: CatalogItem[];
-}
-
-export type WorkshopType = "carros" | "motos" | "mista" | "estetica";
-
-export type GalleryItemKind = "ambiente" | "antes" | "depois" | "equipe";
-
-export interface WorkshopGalleryItem {
-  id: string;
-  url: string;
-  caption: string;
-  kind: GalleryItemKind;
 }
 
 export interface Workshop {
@@ -53,6 +55,7 @@ export interface Workshop {
   image: string;
   coverImage?: string;
   gallery?: WorkshopGalleryItem[];
+  profileVideos?: string[];
   specialties: string[];
   hasAgenda: boolean;
   paymentMethods: string[];
