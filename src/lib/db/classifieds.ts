@@ -80,6 +80,7 @@ export async function updateClassified(
     price: number;
     contact: string;
     category: string;
+    images: string[];
     premium: boolean;
     active: boolean;
   }>,
@@ -102,6 +103,7 @@ export async function updateClassified(
       ...(input.price !== undefined ? { price: input.price } : {}),
       ...(input.contact !== undefined ? { contact: input.contact.trim() || null } : {}),
       ...(input.category !== undefined ? { category: input.category.trim() } : {}),
+      ...(input.images !== undefined ? { images: input.images as object } : {}),
       ...(input.premium !== undefined ? { premium: input.premium } : {}),
       ...(input.active !== undefined ? { active: input.active } : {}),
     },

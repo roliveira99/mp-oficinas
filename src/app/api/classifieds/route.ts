@@ -6,6 +6,15 @@ import {
   updateClassified,
 } from "@/lib/db/classifieds";
 import { getRequestUser, userHasPermission } from "@/lib/db/request-auth";
+import { isOversizedMediaUrl } from "@/lib/media-url";
+
+function validateClassifiedMedia(images?: string[]): string | null {
+  if (!images?.length) return null;
+  if (images.some(isOversizedMediaUrl)) {
+    return "Uma ou mais fotos ou vídeos são muito grandes. Use arquivos menores (vídeos até 5 MB).";
+  }
+  return null;
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -36,9 +45,15 @@ export async function POST(request: Request) {
   const body = (await request.json()) as Record<string, unknown>;
   const action = body.action as string;
   const isMaster = user?.role === "master";
+  const images = body.images as string[] | undefined;
 
   switch (action) {
     case "create": {
+      const mediaError = validateClassifiedMedia(images);
+      if (mediaError) {
+        return NextResponse.json({ error: mediaError }, { status: 413 });
+      }
+
       if (isMaster && userHasPermission(user, "admin.gerenciar_anuncios")) {
         const ad = await createClassified({
           workshopId: body.workshopId as string | undefined,
@@ -47,7 +62,7 @@ export async function POST(request: Request) {
           price: body.price !== undefined ? Number(body.price) : undefined,
           contact: body.contact as string | undefined,
           category: body.category as string | undefined,
-          images: body.images as string[] | undefined,
+          images,
           premium: body.premium as boolean | undefined,
         });
         return NextResponse.json({ ok: true, ad });
@@ -62,11 +77,17 @@ export async function POST(request: Request) {
         price: body.price !== undefined ? Number(body.price) : undefined,
         contact: body.contact as string | undefined,
         category: body.category as string | undefined,
+        images,
         premium: false,
       });
       return NextResponse.json({ ok: true, ad });
     }
     case "update": {
+      const mediaError = validateClassifiedMedia(images);
+      if (mediaError) {
+        return NextResponse.json({ error: mediaError }, { status: 413 });
+      }
+
       if (isMaster && userHasPermission(user, "admin.gerenciar_anuncios")) {
         const result = await updateClassified(
           body.id as string,
@@ -77,6 +98,7 @@ export async function POST(request: Request) {
             price: body.price !== undefined ? Number(body.price) : undefined,
             contact: body.contact as string | undefined,
             category: body.category as string | undefined,
+            images,
             premium: body.premium as boolean | undefined,
             active: body.active as boolean | undefined,
           },
@@ -91,6 +113,7 @@ export async function POST(request: Request) {
         price: body.price !== undefined ? Number(body.price) : undefined,
         contact: body.contact as string | undefined,
         category: body.category as string | undefined,
+        images,
         active: body.active as boolean | undefined,
       });
       return NextResponse.json(result);

@@ -8,13 +8,20 @@ import {
   formatClassifiedPrice,
   isRecentClassified,
 } from "@/lib/classified-format";
+import { MediaPreview } from "@/components/ui/MediaPreview";
+import { isDataVideoUrl } from "@/lib/media-url";
 
-function ClassifiedImage({ ad }: { ad: ClassifiedAdRecord }) {
+function ClassifiedMedia({ ad }: { ad: ClassifiedAdRecord }) {
   const src = ad.images[0];
   if (src) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={src} alt="" className="classified-product-image" loading="lazy" />
+      <MediaPreview
+        src={src}
+        alt=""
+        className="classified-product-image"
+        videoClassName="classified-product-image"
+        controls={!isDataVideoUrl(src)}
+      />
     );
   }
   return <div className="classified-product-image classified-product-image-placeholder" aria-hidden />;
@@ -40,7 +47,7 @@ function ClassifiedCardContent({
   return (
     <>
       <div className="classified-product-media">
-        <ClassifiedImage ad={ad} />
+        <ClassifiedMedia ad={ad} />
       </div>
 
       {(ad.premium || isNew) && (
@@ -125,7 +132,7 @@ export function ClassifiedProductCardStatic({ ad }: { ad: ClassifiedAdRecord }) 
     <article className="classified-product-card classified-product-card-grid">
       <Link href="/classificados" className="classified-product-link">
         <div className="classified-product-media">
-          <ClassifiedImage ad={ad} />
+          <ClassifiedMedia ad={ad} />
         </div>
         {ad.premium && (
           <div className="classified-product-badges">
