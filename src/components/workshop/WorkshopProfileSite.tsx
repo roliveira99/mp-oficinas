@@ -13,6 +13,7 @@ import {
 } from "@/components/workshop/WorkshopCatalogSection";
 import { WorkshopContactActions } from "@/components/workshop/WorkshopContactActions";
 import { WorkshopGallery } from "@/components/workshop/WorkshopGallery";
+import { WorkshopProfileShowcase } from "@/components/workshop/WorkshopProfileShowcase";
 import { WorkshopProfileVideos } from "@/components/workshop/WorkshopProfileVideos";
 import { WorkshopReviewsSection } from "@/components/workshop/WorkshopReviewsSection";
 import { RatingSummary } from "@/components/workshop/StarRating";
@@ -49,6 +50,14 @@ export function WorkshopProfileSite({ workshop, sponsorshipTier = "none" }: Work
     workshop.whatsapp,
     whatsappWorkshopMessage(workshop.name, "profile")
   );
+  const hasShowcase = (workshop.profileShowcase?.length ?? 0) > 0;
+  const profileNavItems = hasShowcase
+    ? [
+        ...navItems.slice(0, 2),
+        { id: "vitrine", label: "Vitrine" },
+        ...navItems.slice(2),
+      ]
+    : navItems;
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
@@ -119,7 +128,7 @@ export function WorkshopProfileSite({ workshop, sponsorshipTier = "none" }: Work
             </div>
 
             <nav className="mt-8 flex gap-2 overflow-x-auto pb-2">
-              {navItems.map((item) => (
+              {profileNavItems.map((item) => (
                 <a
                   key={item.id}
                   href={`#${item.id}`}
@@ -140,6 +149,10 @@ export function WorkshopProfileSite({ workshop, sponsorshipTier = "none" }: Work
 
         {workshop.profileVideos && workshop.profileVideos.length > 0 && (
           <WorkshopProfileVideos videos={workshop.profileVideos} workshopName={workshop.name} />
+        )}
+
+        {hasShowcase && workshop.profileShowcase && (
+          <WorkshopProfileShowcase items={workshop.profileShowcase} workshopName={workshop.name} />
         )}
 
         <div className="mt-12 grid gap-12 lg:grid-cols-3">

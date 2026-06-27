@@ -163,6 +163,7 @@ model Workshop {
   slogan          String?
   profileVideos   Json?
   profileHighlights Json?
+  profileShowcase Json?
   businessOpportunities Json?
   catalogItems    CatalogItem[]
   budgets         WorkshopBudget[]

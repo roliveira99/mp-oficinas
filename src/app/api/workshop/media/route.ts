@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getWorkshopMedia, updateWorkshopMedia } from "@/lib/db/workshop-media";
 import { getRequestUser, userHasPermission } from "@/lib/db/request-auth";
 import { isOversizedMediaUrl } from "@/lib/media-url";
-import type { WorkshopGalleryItem } from "@/types/workshop";
+import type { WorkshopGalleryItem, WorkshopShowcaseItem } from "@/types/workshop";
 
 export async function GET() {
   const user = await getRequestUser();
@@ -26,6 +26,7 @@ export async function PUT(request: Request) {
     slogan?: string;
     gallery?: WorkshopGalleryItem[];
     profileVideos?: string[];
+    profileShowcase?: WorkshopShowcaseItem[];
     profileHighlights?: { title: string; body: string }[];
     businessOpportunities?: { title: string; body: string }[];
   };
@@ -34,6 +35,7 @@ export async function PUT(request: Request) {
     body.coverImage,
     ...(body.gallery?.map((g) => g.url) ?? []),
     ...(body.profileVideos ?? []),
+    ...(body.profileShowcase?.map((item) => item.url) ?? []),
   ].some(isOversizedMediaUrl);
 
   if (tooLarge) {

@@ -12,6 +12,16 @@ export interface WorkshopGalleryItem {
   mediaType?: "image" | "video";
 }
 
+/** Peça ou produto em destaque no perfil (foto/vídeo + preço ou texto livre). */
+export interface WorkshopShowcaseItem {
+  id: string;
+  url: string;
+  mediaType: "image" | "video";
+  title?: string;
+  price?: number | null;
+  label?: string;
+}
+
 export interface CatalogItem {
   id: string;
   name: string;
@@ -56,6 +66,7 @@ export interface Workshop {
   coverImage?: string;
   gallery?: WorkshopGalleryItem[];
   profileVideos?: string[];
+  profileShowcase?: WorkshopShowcaseItem[];
   specialties: string[];
   hasAgenda: boolean;
   paymentMethods: string[];

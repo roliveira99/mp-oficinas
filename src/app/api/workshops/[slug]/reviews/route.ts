@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/reviews";
 import { getWorkshopBySlug } from "@/lib/db/workshops";
 import { requirePermission } from "@/lib/db/request-auth";
+import { getOperationalConfig } from "@/lib/verticals/operational";
 import type { StarRating } from "@/types/review";
 
 interface RouteContext {
@@ -47,8 +48,15 @@ export async function POST(request: Request, context: RouteContext) {
   };
 
   if (body.action === "verify") {
-    if (!body.cpf || !body.plate) {
-      return NextResponse.json({ error: "CPF e placa são obrigatórios." }, { status: 400 });
+    const ops = getOperationalConfig(workshop.vertical);
+    if (!body.cpf) {
+      return NextResponse.json({ error: "CPF é obrigatório." }, { status: 400 });
+    }
+    if (ops.reviews.requireAssetReference && !body.plate?.trim()) {
+      return NextResponse.json(
+        { error: `CPF e ${ops.reviews.assetReferenceLabel.toLowerCase()} são obrigatórios.` },
+        { status: 400 }
+      );
     }
     const result = await verifyReviewEligibility({
       workshopId: workshop.id,

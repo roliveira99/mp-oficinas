@@ -51,7 +51,7 @@ export async function submitWorkshopReview(
 
 export async function verifyWorkshopClient(
   slug: string,
-  input: { cpf: string; plate: string; name?: string; phone?: string; birthDate?: string }
+  input: { cpf: string; plate?: string; name?: string; phone?: string; birthDate?: string }
 ): Promise<
   | { client: VerifiedClient; existingReview: WorkshopReview | null }
   | { needsRegistration: true }

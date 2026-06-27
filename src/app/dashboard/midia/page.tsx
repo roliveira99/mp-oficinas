@@ -9,13 +9,14 @@ import { MediaPreview } from "@/components/ui/MediaPreview";
 import { Icon } from "@/components/ui/Icon";
 import { mediaUrlLabel } from "@/lib/media-url";
 import { fetchWorkshopMedia, saveWorkshopMedia } from "@/lib/api/crm-client";
-import type { WorkshopGalleryItem } from "@/types/workshop";
+import type { WorkshopGalleryItem, WorkshopShowcaseItem } from "@/types/workshop";
 
 export default function MidiaPage() {
   const [coverImage, setCoverImage] = useState("");
   const [tagline, setTagline] = useState("");
   const [slogan, setSlogan] = useState("");
   const [gallery, setGallery] = useState<WorkshopGalleryItem[]>([]);
+  const [showcase, setShowcase] = useState<WorkshopShowcaseItem[]>([]);
   const [profileVideos, setProfileVideos] = useState<string[]>([]);
   const [highlights, setHighlights] = useState<{ title: string; body: string }[]>([]);
   const [opportunities, setOpportunities] = useState<{ title: string; body: string }[]>([]);
@@ -34,6 +35,7 @@ export default function MidiaPage() {
       setTagline(data.tagline ?? "");
       setSlogan(data.slogan ?? "");
       setGallery(data.gallery ?? []);
+      setShowcase(data.profileShowcase ?? []);
       setProfileVideos(data.profileVideos ?? []);
       setHighlights(data.profileHighlights ?? []);
       setOpportunities(data.businessOpportunities ?? []);
@@ -57,6 +59,7 @@ export default function MidiaPage() {
         tagline: tagline.trim(),
         slogan: slogan.trim(),
         gallery,
+        profileShowcase: showcase,
         profileVideos,
         profileHighlights: highlights,
         businessOpportunities: opportunities,
@@ -68,6 +71,28 @@ export default function MidiaPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function addShowcaseItems(items: { url: string; mediaType: "image" | "video" }[]) {
+    setShowcase((prev) => [
+      ...prev,
+      ...items.map((item, index) => ({
+        id: `showcase-${Date.now()}-${index}`,
+        url: item.url,
+        mediaType: item.mediaType,
+        title: "",
+        price: null,
+        label: "",
+      })),
+    ]);
+  }
+
+  function updateShowcaseItem(id: string, patch: Partial<WorkshopShowcaseItem>) {
+    setShowcase((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  }
+
+  function removeShowcaseItem(id: string) {
+    setShowcase((prev) => prev.filter((item) => item.id !== id));
   }
 
   function addGalleryItems(items: { url: string; caption: string; mediaType: "image" | "video" }[]) {
@@ -99,7 +124,7 @@ export default function MidiaPage() {
     <PermissionGuard permissions={["owner.perfil"]}>
       <PageHeader
         title="Meu perfil no site"
-        description="Fotos, vídeos, slogans e informações exibidas na sua página pública"
+        description="Fotos, vídeos, vitrine de produtos, slogans e informações exibidas na sua página pública"
       />
 
       {message && <p className="dash-alert">{message}</p>}
@@ -199,6 +224,82 @@ export default function MidiaPage() {
                 </li>
               ))}
             </ul>
+          )}
+        </section>
+
+        <section className="card p-5">
+          <h2 className="font-semibold text-foreground">Vitrine de produtos</h2>
+          <p className="mt-1 text-sm text-muted">
+            Ideal para lojas de roupas e comércio: publique fotos ou vídeos com preço ou texto livre
+            (promoção, tamanho, condição de pagamento).
+          </p>
+
+          <div className="mt-4">
+            <GalleryMediaPicker onAdd={addShowcaseItems} />
+          </div>
+
+          {showcase.length > 0 ? (
+            <ul className="mt-6 grid gap-4 lg:grid-cols-2">
+              {showcase.map((item) => (
+                <li key={item.id} className="overflow-hidden rounded-xl border border-border">
+                  <div className="grid gap-0 sm:grid-cols-[140px_1fr]">
+                    <MediaPreview
+                      src={item.url}
+                      alt={item.title ?? "Produto"}
+                      className="aspect-square h-full w-full object-cover sm:min-h-[140px]"
+                      videoClassName="aspect-square h-full w-full object-cover sm:min-h-[140px]"
+                    />
+                    <div className="space-y-3 border-t border-border p-4 sm:border-l sm:border-t-0">
+                      <input
+                        value={item.title ?? ""}
+                        onChange={(e) => updateShowcaseItem(item.id, { title: e.target.value })}
+                        className="input-field"
+                        placeholder="Nome do produto (opcional)"
+                      />
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="block text-sm">
+                          <span className="font-medium">Preço (R$)</span>
+                          <input
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            value={item.price ?? ""}
+                            onChange={(e) =>
+                              updateShowcaseItem(item.id, {
+                                price: e.target.value ? Number(e.target.value) : null,
+                              })
+                            }
+                            className="input-field mt-1"
+                            placeholder="Ex.: 89,90"
+                          />
+                        </label>
+                        <label className="block text-sm">
+                          <span className="font-medium">Texto livre</span>
+                          <input
+                            value={item.label ?? ""}
+                            onChange={(e) => updateShowcaseItem(item.id, { label: e.target.value })}
+                            className="input-field mt-1"
+                            placeholder="Ex.: Promoção, Tam. M, 3x sem juros"
+                          />
+                        </label>
+                      </div>
+                      <p className="text-xs text-muted">
+                        Use preço, texto livre ou os dois. No perfil público, o preço aparece em destaque.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => removeShowcaseItem(item.id)}
+                        className="text-sm text-danger"
+                      >
+                        Remover item
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-4 text-sm text-muted">Nenhum produto na vitrine ainda.</p>
           )}
         </section>
 

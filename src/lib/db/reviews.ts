@@ -344,10 +344,16 @@ export async function upsertReview(input: {
   const client = await getVerifiedClient(input.workshopId, normalized);
 
   if (!client || client.completedServices.length === 0) {
+    const workshop = await prisma.workshop.findUnique({
+      where: { id: input.workshopId },
+      select: { vertical: true },
+    });
+    const ops = getOperationalConfig(workshop?.vertical);
     return {
       ok: false,
-      error:
-        "Só é possível avaliar após um serviço concluído. Informe CPF e placa do veículo atendido.",
+      error: ops.reviews.requireAssetReference
+        ? `Só é possível avaliar após um serviço concluído. Informe CPF e ${ops.reviews.assetReferenceLabel.toLowerCase()}.`
+        : "Só é possível avaliar após um serviço concluído neste estabelecimento. Informe seu CPF.",
     };
   }
 

@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { isDatabaseReachable, prisma } from "@/lib/db/prisma";
-import type { WorkshopCatalog, WorkshopGalleryItem } from "@/types/workshop";
+import type { WorkshopCatalog, WorkshopGalleryItem, WorkshopShowcaseItem } from "@/types/workshop";
 
 export async function getCatalogOverride(workshopId: string): Promise<WorkshopCatalog | null> {
   if (!(await isDatabaseReachable())) return null;
@@ -27,6 +27,7 @@ export async function getWorkshopMedia(workshopId: string): Promise<{
   slogan: string | null;
   gallery: WorkshopGalleryItem[];
   profileVideos: string[];
+  profileShowcase: WorkshopShowcaseItem[];
   profileHighlights: { title: string; body: string }[];
   businessOpportunities: { title: string; body: string }[];
 }> {
@@ -38,6 +39,7 @@ export async function getWorkshopMedia(workshopId: string): Promise<{
       slogan: true,
       gallery: true,
       profileVideos: true,
+      profileShowcase: true,
       profileHighlights: true,
       businessOpportunities: true,
     },
@@ -48,6 +50,7 @@ export async function getWorkshopMedia(workshopId: string): Promise<{
     slogan: row.slogan,
     gallery: (row.gallery as WorkshopGalleryItem[] | null) ?? [],
     profileVideos: (row.profileVideos as string[] | null) ?? [],
+    profileShowcase: (row.profileShowcase as WorkshopShowcaseItem[] | null) ?? [],
     profileHighlights: (row.profileHighlights as { title: string; body: string }[] | null) ?? [],
     businessOpportunities: (row.businessOpportunities as { title: string; body: string }[] | null) ?? [],
   };
@@ -61,6 +64,7 @@ export async function updateWorkshopMedia(
     slogan?: string;
     gallery?: WorkshopGalleryItem[];
     profileVideos?: string[];
+    profileShowcase?: WorkshopShowcaseItem[];
     profileHighlights?: { title: string; body: string }[];
     businessOpportunities?: { title: string; body: string }[];
   }
@@ -76,6 +80,9 @@ export async function updateWorkshopMedia(
         : {}),
       ...(input.profileVideos !== undefined
         ? { profileVideos: input.profileVideos as unknown as Prisma.InputJsonValue }
+        : {}),
+      ...(input.profileShowcase !== undefined
+        ? { profileShowcase: input.profileShowcase as unknown as Prisma.InputJsonValue }
         : {}),
       ...(input.profileHighlights !== undefined
         ? { profileHighlights: input.profileHighlights as unknown as Prisma.InputJsonValue }

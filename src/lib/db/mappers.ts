@@ -1,5 +1,5 @@
 import type { Workshop as DbWorkshop } from "@prisma/client";
-import type { Workshop, WorkshopCatalog, WorkshopGalleryItem } from "@/types/workshop";
+import type { Workshop, WorkshopCatalog, WorkshopGalleryItem, WorkshopShowcaseItem } from "@/types/workshop";
 
 export function mapDbWorkshop(row: DbWorkshop): Workshop {
   const catalogOverride = row.catalogOverride as unknown as WorkshopCatalog | null;
@@ -28,6 +28,7 @@ export function mapDbWorkshop(row: DbWorkshop): Workshop {
     coverImage: row.coverImage ?? undefined,
     gallery: (row.gallery as unknown as WorkshopGalleryItem[] | null) ?? undefined,
     profileVideos: (row.profileVideos as unknown as string[] | null) ?? undefined,
+    profileShowcase: (row.profileShowcase as unknown as WorkshopShowcaseItem[] | null) ?? undefined,
     specialties: row.specialties as unknown as string[],
     hasAgenda: row.hasAgenda,
     paymentMethods: row.paymentMethods as unknown as string[],

@@ -10,6 +10,7 @@ import {
 } from "@/lib/api/reviews-client";
 import type { Workshop } from "@/types/workshop";
 import type { StarRating, WorkshopReview } from "@/types/review";
+import { getOperationalConfig } from "@/lib/verticals/operational";
 import { RatingSummary, StarDisplay, StarInput } from "./StarRating";
 
 interface WorkshopReviewsSectionProps {
@@ -20,6 +21,9 @@ interface WorkshopReviewsSectionProps {
 type FormStep = "cpf" | "register" | "form" | "success";
 
 export function WorkshopReviewsSection({ workshop, onStatsChange }: WorkshopReviewsSectionProps) {
+  const ops = getOperationalConfig(workshop.vertical);
+  const requireReference = ops.reviews.requireAssetReference;
+  const referenceLabel = ops.reviews.assetReferenceLabel;
   const [reviews, setReviews] = useState<WorkshopReview[]>([]);
   const [stats, setStats] = useState({ average: workshop.rating, count: workshop.reviewCount });
   const [step, setStep] = useState<FormStep>("cpf");
@@ -57,12 +61,15 @@ export function WorkshopReviewsSection({ workshop, onStatsChange }: WorkshopRevi
       setError("Informe um CPF válido.");
       return;
     }
-    if (!plate.trim()) {
-      setError("Informe a placa do veículo atendido.");
+    if (requireReference && !plate.trim()) {
+      setError(`Informe a ${referenceLabel.toLowerCase()}.`);
       return;
     }
 
-    const result = await verifyWorkshopClient(workshop.slug, { cpf, plate });
+    const result = await verifyWorkshopClient(workshop.slug, {
+      cpf,
+      ...(requireReference ? { plate } : {}),
+    });
 
     if ("error" in result) {
       setError(result.error);
@@ -92,7 +99,7 @@ export function WorkshopReviewsSection({ workshop, onStatsChange }: WorkshopRevi
 
     const result = await verifyWorkshopClient(workshop.slug, {
       cpf,
-      plate,
+      ...(requireReference ? { plate } : {}),
       name: registerName.trim(),
       phone: registerPhone.trim() || undefined,
       birthDate: registerBirthDate,
@@ -226,7 +233,9 @@ export function WorkshopReviewsSection({ workshop, onStatsChange }: WorkshopRevi
                   : "Deixe sua avaliação"}
             </h3>
             <p className="mt-1 text-xs text-muted">
-              Informe CPF e placa do veículo. Se ainda não estiver cadastrado, faremos seu registro aqui.
+              {requireReference
+                ? `Informe CPF e ${referenceLabel.toLowerCase()}. Se ainda não estiver cadastrado, faremos seu registro aqui.`
+                : "Informe seu CPF. Só quem teve serviço concluído neste estabelecimento pode avaliar."}
             </p>
 
             {step === "cpf" && (
@@ -242,17 +251,19 @@ export function WorkshopReviewsSection({ workshop, onStatsChange }: WorkshopRevi
                     maxLength={14}
                   />
                 </label>
-                <label className="block text-sm">
-                  <span className="font-medium">Placa do veículo</span>
-                  <input
-                    required
-                    value={plate}
-                    onChange={(e) => setPlate(e.target.value.toUpperCase())}
-                    className="input-field mt-1.5"
-                    placeholder="ABC1D23"
-                    maxLength={8}
-                  />
-                </label>
+                {requireReference && (
+                  <label className="block text-sm">
+                    <span className="font-medium">{referenceLabel}</span>
+                    <input
+                      required
+                      value={plate}
+                      onChange={(e) => setPlate(e.target.value.toUpperCase())}
+                      className="input-field mt-1.5"
+                      placeholder={ops.assets.fields[0]?.placeholder ?? "Referência"}
+                      maxLength={32}
+                    />
+                  </label>
+                )}
                 {error && <p className="text-sm text-red-600">{error}</p>}
                 <button
                   type="submit"
@@ -267,7 +278,9 @@ export function WorkshopReviewsSection({ workshop, onStatsChange }: WorkshopRevi
             {step === "register" && (
               <form onSubmit={handleRegisterSubmit} className="mt-4 space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Encontramos serviço concluído para esta placa. Complete seu cadastro para avaliar.
+                  {requireReference
+                    ? `Encontramos serviço concluído para esta ${referenceLabel.toLowerCase()}. Complete seu cadastro para avaliar.`
+                    : "Encontramos serviço concluído para este CPF. Complete seu cadastro para avaliar."}
                 </p>
                 <label className="block text-sm">
                   <span className="font-medium">Seu nome</span>

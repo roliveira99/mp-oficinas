@@ -174,6 +174,7 @@ export async function fetchWorkshopMedia() {
     slogan: string | null;
     gallery: import("@/types/workshop").WorkshopGalleryItem[];
     profileVideos: string[];
+    profileShowcase: import("@/types/workshop").WorkshopShowcaseItem[];
     profileHighlights: { title: string; body: string }[];
     businessOpportunities: { title: string; body: string }[];
   }>;
@@ -185,6 +186,7 @@ export async function saveWorkshopMedia(input: {
   slogan?: string;
   gallery?: import("@/types/workshop").WorkshopGalleryItem[];
   profileVideos?: string[];
+  profileShowcase?: import("@/types/workshop").WorkshopShowcaseItem[];
   profileHighlights?: { title: string; body: string }[];
   businessOpportunities?: { title: string; body: string }[];
 }) {
@@ -203,6 +205,7 @@ export async function saveWorkshopMedia(input: {
     slogan: string | null;
     gallery: import("@/types/workshop").WorkshopGalleryItem[];
     profileVideos: string[];
+    profileShowcase: import("@/types/workshop").WorkshopShowcaseItem[];
     profileHighlights: { title: string; body: string }[];
     businessOpportunities: { title: string; body: string }[];
   }>;
