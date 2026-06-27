@@ -2,10 +2,7 @@ import { APP_NAME } from "@/lib/brand";
 import { getPlatformTerminology } from "@/lib/platform-routes";
 import Link from "next/link";
 import { NewspaperHomeTop } from "@/components/news/NewspaperHomeTop";
-import {
-  PublicHomeHero,
-  PublicTrustBar,
-} from "@/components/home/PublicHomeHero";
+import { PublicHomeHero } from "@/components/home/PublicHomeHero";
 import { SiteAnnouncements } from "@/components/site/SiteAnnouncements";
 import { WorkshopGrid } from "@/components/workshop/WorkshopGrid";
 import { ButtonLink } from "@/components/ui/Button";
@@ -55,7 +52,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       />
 
       <PublicHomeHero selectedCity={cityFilter} />
-      <PublicTrustBar />
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <SectionHeader

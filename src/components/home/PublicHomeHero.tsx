@@ -152,30 +152,3 @@ export function PublicHomeHero({ selectedCity }: { selectedCity?: string }) {
     </section>
   );
 }
-
-export function PublicTrustBar() {
-  const items = [
-    { icon: "star" as const, title: "Avaliações verificadas", desc: "Só quem contratou avalia" },
-    { icon: "calendar" as const, title: "Agenda online", desc: "Solicite horário sem login" },
-    { icon: "sparkles" as const, title: "Multi-segmento", desc: "Automotivo, beleza, comércio e mais" },
-    { icon: "credit-card" as const, title: "Preços de referência", desc: "Catálogo transparente" },
-  ];
-
-  return (
-    <section className="border-b border-border bg-surface">
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
-        {items.map((item) => (
-          <div key={item.title} className="flex gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
-              <Icon name={item.icon} className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="font-semibold text-foreground">{item.title}</p>
-              <p className="text-sm text-muted">{item.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
