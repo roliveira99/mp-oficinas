@@ -1,11 +1,9 @@
-import { APP_NAME } from "@/lib/brand";
-import { getPlatformTerminology } from "@/lib/platform-routes";
 import Link from "next/link";
+import { getPlatformTerminology } from "@/lib/platform-routes";
 import { NewspaperHomeTop } from "@/components/news/NewspaperHomeTop";
 import { PublicHomeHero } from "@/components/home/PublicHomeHero";
 import { SiteAnnouncements } from "@/components/site/SiteAnnouncements";
 import { WorkshopGrid } from "@/components/workshop/WorkshopGrid";
-import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { normalizeCityFilter } from "@/lib/cities";
@@ -72,34 +70,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       </section>
 
       <SiteAnnouncements placement="home_meio" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" />
-
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="card overflow-hidden">
-          <div className="grid lg:grid-cols-2">
-            <div className="p-8 sm:p-10 lg:p-12">
-              <p className="section-eyebrow mb-3">Para gestores</p>
-              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                {terms.homeManagerTitle}
-              </h2>
-              <p className="mt-4 text-sm leading-relaxed text-muted sm:text-base">
-                {terms.homeManagerDescription}
-              </p>
-              <div className="mt-8">
-                <ButtonLink href="/login" variant="primary">
-                  Entrar no painel
-                </ButtonLink>
-              </div>
-            </div>
-            <div
-              className="min-h-[200px] border-t border-border bg-cover bg-center lg:border-t-0 lg:border-l"
-              style={{
-                backgroundImage:
-                  "url(https://images.unsplash.com/photo-1625047509248-ec889cbff17f?w=800&q=80)",
-              }}
-            />
-          </div>
-        </div>
-      </section>
     </>
   );
 }

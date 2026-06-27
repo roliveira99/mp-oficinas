@@ -69,11 +69,11 @@ export function Header() {
           <ThemeToggle variant="compact" />
           {mounted && user ? (
             <ButtonLink href={getDashboardHomeHref(user.role)} variant="primary">
-              Acessar painel
+              PAINEL
             </ButtonLink>
           ) : (
             <ButtonLink href="/login" variant="primary">
-              Entrar
+              ENTRAR
             </ButtonLink>
           )}
         </div>
@@ -114,11 +114,11 @@ export function Header() {
               </div>
               {mounted && user ? (
                 <ButtonLink href={getDashboardHomeHref(user.role)} variant="primary" className="w-full">
-                  Acessar painel
+                  PAINEL
                 </ButtonLink>
               ) : (
                 <ButtonLink href="/login" variant="primary" className="w-full">
-                  Entrar
+                  ENTRAR
                 </ButtonLink>
               )}
             </div>
